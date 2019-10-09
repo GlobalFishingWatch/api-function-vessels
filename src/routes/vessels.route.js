@@ -1,6 +1,9 @@
+const basicAuth = require('express-basic-auth');
 const datasets = require('../services/dataset.service');
 const tracks = require('../services/tracks.service');
 const log = require('../log');
+const config = require('../config');
+const redisCache = require('../db/redis');
 
 const loadDataset = async (req, res, next) => {
   try {
@@ -21,18 +24,57 @@ const loadDataset = async (req, res, next) => {
 
 module.exports = app => {
   app.get(
+    '/cache/flush/:tag',
+    basicAuth({
+      users: {
+        [config.auth.username]: config.auth.password
+      },
+      challenge: true,
+      realm: 'API-Vessels-Tracks'
+    }),
+    async (req, res, next) => {
+      try {
+        // await redisCache.redis.flushdb();
+        await redisCache.invalidate(req.params.tag);
+        res.json({ [req.params.tag]: 'ok' });
+      } catch (err) {
+        log.error('Error flushing cache');
+        return next(err);
+      }
+    }
+  );
+  app.get(
+    '/cache/flush-all',
+    basicAuth({
+      users: {
+        [config.auth.username]: config.auth.password
+      },
+      challenge: true,
+      realm: 'API-Vessels-Tracks'
+    }),
+    async (req, res, next) => {
+      try {
+        await redisCache.redis.flushdb();
+        res.json({ flushall: 'ok' });
+      } catch (err) {
+        log.error('Error flushing cache');
+        return next(err);
+      }
+    }
+  );
+  app.get(
     '/datasets/:dataset/vessels/:vesselId/tracks',
     loadDataset,
     async (req, res, next) => {
       try {
-        const vesselId = req.params.vesselId;
+        const { vesselId } = req.params;
         const params = {
-          startDate: req.params.startDate,
-          endDate: req.params.endDate
+          startDate: req.query.startDate,
+          endDate: req.query.endDate
         };
-        const format = req.params.format || 'lines';
-        const features = req.params.features
-          ? req.params.features.split(',')
+        const format = req.query.format || 'lines';
+        const features = req.query.features
+          ? req.query.features.split(',')
           : [];
 
         log.debug(
@@ -49,11 +91,21 @@ module.exports = app => {
 
         log.debug(`Converting the records to format ${format}`);
         const result = trackLoader.formatters[format](records);
-
+        log.debug('Setting year tags');
+        const startYear = new Date(params.startDate).getFullYear();
+        const endYear = new Date(params.endDate).getFullYear();
+        res.locals.cacheTags = [];
+        console.log('start', startYear);
+        console.log('end', endYear);
+        console.log(params);
+        for (let i = startYear; i <= endYear; i++) {
+          res.locals.cacheTags.push(`tracks-${i}`);
+        }
+        console.log('Tags', res.locals.cacheTags);
         log.debug(`Returning track for vessel ${vesselId}`);
         return res.json(result);
-      } catch (error) {
-        return next(error);
+      } catch (err) {
+        return next(err);
       }
     }
   );

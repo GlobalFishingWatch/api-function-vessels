@@ -45,6 +45,20 @@ module.exports = greenpeace.sanitizeEnvironment(environments, {
       required: false
     })
   },
+  auth: {
+    username: greenpeace.entry({
+      key: 'AUTH_USERNAME',
+      doc: 'Username for flush cache endpoint',
+      defaults: { test: 'gfw' },
+      required: true
+    }),
+    password: greenpeace.entry({
+      key: 'AUTH_PASSWORD',
+      doc: 'Password for flush cache endpoint',
+      defaults: { test: 'admin' },
+      required: true
+    })
+  },
 
   platform: {
     settingsServer: greenpeace.entry({

@@ -12,7 +12,7 @@ const app = express();
 app.use(logMiddleware.logger());
 app.use(helmet());
 app.use(cors.simple());
-app.use(redis());
+app.use(redis(['/cache/flush*']));
 app.use(compression());
 routes.forEach(registerRoute => registerRoute(app));
 app.use(logMiddleware.errorLogger());

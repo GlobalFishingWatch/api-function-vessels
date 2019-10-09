@@ -2,7 +2,8 @@ const redisCache = require('../db/redis');
 const config = require('../config');
 const log = require('../log');
 const zlib = require('zlib');
-const DAY_SECONDS = 24 * 60 * 60;
+const UrlPattern = require('url-pattern');
+
 module.exports = {
   withStaticTTL(ttl) {
     return (req, res, next) => {
@@ -12,19 +13,25 @@ module.exports = {
       next();
     };
   },
-  redis() {
+  redis(patternsNotCache = []) {
+    const urlPatternsNotCache = patternsNotCache.map(p => new UrlPattern(p));
     return async (req, res, next) => {
       try {
         if (!config.redis.enabled) {
           next();
           return;
         }
-        const exists = await redisCache.getAsync(req.url);
+        const noCache = urlPatternsNotCache.find(p => p.match(req.path));
+        if (noCache) {
+          next();
+          return;
+        }
+        const exists = await redisCache.getBuffer(req.url);
         if (exists) {
           console.log(exists);
           log.debug(`Returning cache for ${req.url}`);
           res.setHeader('Content-Encoding', 'gzip');
-          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
           res.removeHeader('Content-Length');
           res.send(exists);
           return;
@@ -35,20 +42,20 @@ module.exports = {
             try {
               const result = await new Promise((resolve, reject) => {
                 zlib.gzip(
-                  JSON.stringify(body),
+                  body,
                   { level: zlib.Z_BEST_COMPRESSION },
-                  (err, result) => {
+                  (err, data) => {
                     if (err) {
                       log.error('Error zipping response');
                       reject(err);
                       return;
                     }
-                    resolve(result);
+                    resolve(data);
                   }
                 );
               });
               await redisCache
-                .setAsync(req.url, result, 'EX', DAY_SECONDS)
+                .set(req.url, result, res.locals.cacheTags || [])
                 .then(
                   _ => log.debug(`Cached ${req.url} `),
                   err => log.error(`Error caching ${req.url}`, err)

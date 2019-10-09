@@ -1,8 +1,8 @@
+const zlib = require('zlib');
+const UrlPattern = require('url-pattern');
 const redisCache = require('../db/redis');
 const config = require('../config');
 const log = require('../log');
-const zlib = require('zlib');
-const UrlPattern = require('url-pattern');
 
 module.exports = {
   withStaticTTL(ttl) {
@@ -28,7 +28,6 @@ module.exports = {
         }
         const exists = await redisCache.getBuffer(req.url);
         if (exists) {
-          console.log(exists);
           log.debug(`Returning cache for ${req.url}`);
           res.setHeader('Content-Encoding', 'gzip');
           res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -51,14 +50,14 @@ module.exports = {
                       return;
                     }
                     resolve(data);
-                  }
+                  },
                 );
               });
               await redisCache
                 .set(req.url, result, res.locals.cacheTags || [])
                 .then(
-                  _ => log.debug(`Cached ${req.url} `),
-                  err => log.error(`Error caching ${req.url}`, err)
+                  () => log.debug(`Cached ${req.url} `),
+                  err => log.error(`Error caching ${req.url}`, err),
                 );
             } catch (err) {
               log.error(`Error saving cache for url ${req.url}`);
@@ -67,10 +66,10 @@ module.exports = {
 
           res.sendResponse(body);
         };
-        return next();
+        next();
       } catch (err) {
-        return next(err);
+        next(err);
       }
     };
-  }
+  },
 };

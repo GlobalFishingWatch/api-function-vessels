@@ -27,30 +27,29 @@ module.exports = app => {
     '/cache/flush/:tag',
     basicAuth({
       users: {
-        [config.auth.username]: config.auth.password
+        [config.auth.username]: config.auth.password,
       },
       challenge: true,
-      realm: 'API-Vessels-Tracks'
+      realm: 'API-Vessels-Tracks',
     }),
     async (req, res, next) => {
       try {
-        // await redisCache.redis.flushdb();
         await redisCache.invalidate(req.params.tag);
         res.json({ [req.params.tag]: 'ok' });
       } catch (err) {
         log.error('Error flushing cache');
-        return next(err);
+        next(err);
       }
-    }
+    },
   );
   app.get(
     '/cache/flush-all',
     basicAuth({
       users: {
-        [config.auth.username]: config.auth.password
+        [config.auth.username]: config.auth.password,
       },
       challenge: true,
-      realm: 'API-Vessels-Tracks'
+      realm: 'API-Vessels-Tracks',
     }),
     async (req, res, next) => {
       try {
@@ -58,9 +57,9 @@ module.exports = app => {
         res.json({ flushall: 'ok' });
       } catch (err) {
         log.error('Error flushing cache');
-        return next(err);
+        next(err);
       }
-    }
+    },
   );
   app.get(
     '/datasets/:dataset/vessels/:vesselId/tracks',
@@ -70,7 +69,7 @@ module.exports = app => {
         const { vesselId } = req.params;
         const params = {
           startDate: req.query.startDate,
-          endDate: req.query.endDate
+          endDate: req.query.endDate,
         };
         const format = req.query.format || 'lines';
         const features = req.query.features
@@ -78,12 +77,12 @@ module.exports = app => {
           : [];
 
         log.debug(
-          `Configuring track loader for dataset ${req.dataset} using additional features ${features}`
+          `Configuring track loader for dataset ${req.dataset} using additional features ${features}`,
         );
         const trackLoader = tracks({
           dataset: req.dataset,
           additionalFeatures: features,
-          params
+          params,
         });
 
         log.debug(`Looking up track for vessel ${vesselId}`);
@@ -95,18 +94,15 @@ module.exports = app => {
         const startYear = new Date(params.startDate).getFullYear();
         const endYear = new Date(params.endDate).getFullYear();
         res.locals.cacheTags = [];
-        console.log('start', startYear);
-        console.log('end', endYear);
-        console.log(params);
+
         for (let i = startYear; i <= endYear; i++) {
           res.locals.cacheTags.push(`tracks-${i}`);
         }
-        console.log('Tags', res.locals.cacheTags);
         log.debug(`Returning track for vessel ${vesselId}`);
         return res.json(result);
       } catch (err) {
         return next(err);
       }
-    }
+    },
   );
 };

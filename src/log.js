@@ -9,7 +9,7 @@ const level2severity = {
   warning: 'WARNING',
   notice: 'NOTICE',
   info: 'INFO',
-  debug: 'DEBUG'
+  debug: 'DEBUG',
 };
 
 const severity = winston.format(info => {
@@ -24,9 +24,9 @@ module.exports = winston.createLogger({
         winston.format.timestamp(),
         winston.format.ms(),
         severity(),
-        winston.format.json()
-      )
-    })
+        winston.format.json(),
+      ),
+    }),
   ],
-  level: config.log.level
+  level: config.log.level,
 });

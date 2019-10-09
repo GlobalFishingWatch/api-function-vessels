@@ -39,28 +39,22 @@ class TagCache {
   }
 
   async set(key, data, tags, options = {}) {
-    try {
-      // NOTE(@mxstbr): This is a multi execution because if any of the commands is invalid
-      // we don't want to execute anything
-      const multi = await this.redis.multi();
+    // NOTE(@mxstbr): This is a multi execution because if any of the commands is invalid
+    // we don't want to execute anything
+    const multi = await this.redis.multi();
 
-      // Add the key to each of the tag sets
-      tags.forEach(tag => {
-        multi.sadd(`tags:${tag}`, key);
-      });
-      const timeout =
-        (options && options.timeout) || this.options.defaultTimeout;
-      // Add the data to the key
-      if (typeof timeout === 'number') {
-        multi.set(`data:${key}`, data, 'ex', timeout);
-      } else {
-        multi.set(`data:${key}`, data);
-      }
-      await multi.exec();
-      return;
-    } catch (err) {
-      throw err;
+    // Add the key to each of the tag sets
+    tags.forEach(tag => {
+      multi.sadd(`tags:${tag}`, key);
+    });
+    const timeout = (options && options.timeout) || this.options.defaultTimeout;
+    // Add the data to the key
+    if (typeof timeout === 'number') {
+      multi.set(`data:${key}`, data, 'ex', timeout);
+    } else {
+      multi.set(`data:${key}`, data);
     }
+    await multi.exec();
   }
 
   // How invalidation by tag works:
@@ -70,9 +64,10 @@ class TagCache {
   async invalidate(...tags) {
     try {
       // NOTE(@mxstbr): [].concat.apply([],...) flattens the array
+      // eslint-disable-next-line prefer-spread
       const keys = [].concat.apply(
         [],
-        await Promise.all(tags.map(tag => this.redis.smembers(`tags:${tag}`)))
+        await Promise.all(tags.map(tag => this.redis.smembers(`tags:${tag}`))),
       );
 
       const pipeline = await this.redis.pipeline();

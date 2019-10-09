@@ -5,13 +5,13 @@ const swaggerError2ValidationError = error => ({
       errors: [
         {
           code: error.code.toLowerCase(),
-          message: error.toString()
-        }
-      ]
-    }
+          message: error.toString(),
+        },
+      ],
+    },
   ],
 
-  general: []
+  general: [],
 });
 
 module.exports = {
@@ -27,5 +27,5 @@ module.exports = {
 
       return res.sendStatus(500);
     };
-  }
+  },
 };

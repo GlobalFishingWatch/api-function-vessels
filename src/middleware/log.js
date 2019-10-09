@@ -1,5 +1,5 @@
-const url = require("url");
-const log = require("../log");
+const url = require('url');
+const log = require('../log');
 
 module.exports = {
   logger() {
@@ -18,13 +18,13 @@ module.exports = {
           requestUrl: url.format({
             protocol: req.protocol,
             host: req.hostname,
-            pathname: req.originalUrl
+            pathname: req.originalUrl,
           }),
           requestSize: req.socket.bytesRead,
           status: res.statusCode,
-          userAgent: req.get("user-agent"),
+          userAgent: req.get('user-agent'),
           remoteIp: req.ip,
-          latency: `${latency}s`
+          latency: `${latency}s`,
         };
 
         log.info(`HTTP ${req.method} ${req.originalUrl}`, { httpRequest });
@@ -36,11 +36,11 @@ module.exports = {
 
   errorLogger() {
     return (err, req, res, next) => {
-      const message = err.message || "(no error message)";
-      const stack = err.stack || "(no stack trace)";
-      const logMessage = [`uncaught exception ${message}:`, stack].join("\n");
+      const message = err.message || '(no error message)';
+      const stack = err.stack || '(no stack trace)';
+      const logMessage = [`uncaught exception ${message}:`, stack].join('\n');
       log.error(logMessage);
       next(err);
     };
-  }
+  },
 };

@@ -1,4 +1,4 @@
-const entrySymbol = Symbol("configEntry");
+const entrySymbol = Symbol('configEntry');
 
 const isConfigValue = entry => entry[entrySymbol];
 
@@ -9,13 +9,13 @@ const getEntryValue = (environmentKey, defaults, environments) => {
     return environmentValue;
   }
 
-  const activeEnvironment = process.env.NODE_ENV || "development";
+  const activeEnvironment = process.env.NODE_ENV || 'development';
 
   const environmentSettings = environments[activeEnvironment] || {};
 
   const inheritanceChain = [
     activeEnvironment,
-    ...(environmentSettings.inherits || [])
+    ...(environmentSettings.inherits || []),
   ];
 
   for (let i = 0; i < inheritanceChain.length; i += 1) {
@@ -46,18 +46,18 @@ const sanitizeEnvironmentEntry = (environments, entry) => {
     (result, [key, subEntry]) => {
       const { value, errors } = sanitizeEnvironmentEntry(
         environments,
-        subEntry
+        subEntry,
       );
 
       return {
         value: {
           ...result.value,
-          [key]: value
+          [key]: value,
         },
-        errors: [...result.errors, ...errors]
+        errors: [...result.errors, ...errors],
       };
     },
-    { value: {}, errors: [] }
+    { value: {}, errors: [] },
   );
 };
 
@@ -65,7 +65,7 @@ module.exports = {
   entry(settings) {
     return {
       [entrySymbol]: true,
-      ...settings
+      ...settings,
     };
   },
 
@@ -75,11 +75,11 @@ module.exports = {
     if (errors && errors.length > 0) {
       throw new Error(
         `You need to configure the following environment variables: ${errors.join(
-          ", "
-        )}`
+          ', ',
+        )}`,
       );
     }
 
     return value;
-  }
+  },
 };

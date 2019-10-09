@@ -1,0 +1,6 @@
+dev
+test
+node_modules
+Dockerfile
+docker-compose.yml
+.eslintrc.json

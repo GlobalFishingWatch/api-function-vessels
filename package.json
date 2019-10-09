@@ -1,0 +1,43 @@
+{
+  "name": "tracks-cloud-function",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "watch": "npm-watch start",
+    "start": "functions-framework --target=entrypoint"
+  },
+  "watch": {
+    "start": "*.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google-cloud/functions-framework": "^1.3.2",
+    "compression": "^1.7.4",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "express-winston": "^4.0.0",
+    "helmet": "^3.21.1",
+    "knex": "^0.19.5",
+    "lodash": "^4.17.15",
+    "pg": "^7.12.1",
+    "redis": "^2.8.0",
+    "redis-tag-cache": "^1.2.1",
+    "request": "^2.88.0",
+    "request-promise": "^4.2.4",
+    "winston": "^3.2.1"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "eslint": "^5.16.0",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-config-prettier": "^4.2.0",
+    "eslint-plugin-import": "^2.17.2",
+    "eslint-plugin-prettier": "^3.0.1",
+    "mocha": "^6.0.0",
+    "npm-watch": "^0.6.0",
+    "prettier": "^1.17.0"
+  }
+}

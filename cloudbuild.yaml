@@ -1,0 +1,17 @@
+steps:
+  - name: gcr.io/cloud-builders/npm
+    args: ['install']
+  - name: gcr.io/cloud-builders/gcloud
+    args: [
+      'beta',
+      'functions',
+      'deploy','${_FUNCTION_NAME}',
+      '--project=${_PROJECT_NAME}',
+      '--runtime=nodejs10',
+      '--trigger-http',
+      '--entry-point=entrypoint',
+      '--memory=512MB'
+    ]
+
+
+

@@ -11,7 +11,7 @@ services:
       - 'cloudsql-sockets:/cloudsql'
       - '~/.config/gcloud:/root/.config/gcloud'
     ports:
-      - '8090:8080'
+      - '8080:8080'
     environment:
       - NODE_ENV=development
 

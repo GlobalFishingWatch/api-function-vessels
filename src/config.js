@@ -45,6 +45,15 @@ module.exports = greenpeace.sanitizeEnvironment(environments, {
       required: false,
     }),
   },
+  elasticsearch: {
+    server: greenpeace.entry({
+      key: 'ELASTICSEARCH_SERVER',
+      doc:
+        'ElasticSearch server URL to connect to. Should be a complete url to the root of the server, such as https://user:password@elasticsearch.skytruth.org',
+      defaults: { test: 'dummy' },
+      required: true,
+    }),
+  },
   auth: {
     username: greenpeace.entry({
       key: 'AUTH_USERNAME',

@@ -1,7 +1,7 @@
 ################################################################################
 # Base dependencies
 ################################################################################
-FROM node:12 AS dependencies
+FROM node:10 AS dependencies
 
 # Setup the project directory
 RUN mkdir -p /opt/project

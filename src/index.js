@@ -1,11 +1,11 @@
 const express = require('express');
 const helmet = require('helmet');
 const compression = require('compression');
-const cors = require('./middleware/cors');
-const logMiddleware = require('./middleware/log');
-const errors = require('./middleware/errors');
-const { redis } = require('./middleware/caching');
-const routes = require('./routes');
+const cors = require('./middleware/cors.middleware');
+const logMiddleware = require('./middleware/log.middleware');
+const errors = require('./middleware/errors.middleware');
+const { redis } = require('./middleware/caching.middleware');
+const routes = require('./route');
 
 const app = express();
 

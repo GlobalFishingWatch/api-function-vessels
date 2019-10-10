@@ -1,16 +1,17 @@
-const Knex = require("knex");
-const config = require("../config");
-const log = require("../log");
+const Knex = require('knex');
+const config = require('../config');
+const log = require('../log');
 
 module.exports = new Knex({
-  client: "pg",
+  client: 'pg',
   connection: {
     user: config.gcloud.sql.user,
     password: config.gcloud.sql.password,
     database: config.gcloud.sql.db,
-    host: `/cloudsql/${config.gcloud.sql.instance}`
+    host: `/cloudsql/${config.gcloud.sql.instance}`,
   },
-  debug: true,
+  pool: { min: 1, max: 1 },
+  debug: config.log.level === 'debug',
   log: {
     warn(message) {
       log.warn(message);
@@ -23,6 +24,6 @@ module.exports = new Knex({
     },
     debug(message) {
       log.debug(message);
-    }
-  }
+    },
+  },
 });

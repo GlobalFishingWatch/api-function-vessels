@@ -28,6 +28,15 @@ This is a standard docker-compose project, so you can start all the necessary co
 
 If you need to run any npm-specific commands, run them inside the cluster with `docker-compose run dev [COMMAND]`.
 
+### Deploy
+
+Use gcloud cli
+
+```
+
+gcloud beta functions deploy vessel-tracks --entry-point=entrypoint --runtime nodejs10 --trigger-http --env-vars-file=./test/env.yaml --memory=512MB --vpc-connector=projects/skytruth-pelagos-production/locations/us-central1/connectors/vpc-connector
+
+```
 
 ## License
 

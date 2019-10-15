@@ -1,7 +1,23 @@
+const Pbf = require('pbf');
+const geobuf = require('geobuf');
 const loadDatasetMiddleware = require('../middleware/load-dataset.middleware');
 const trackService = require('../service/tracks.service');
 const log = require('../log');
 const { tracksValidation } = require('../validation/track.validation');
+
+function encodeResponse(res, binary = false) {
+  return data => {
+    if (binary) {
+      const pbf = geobuf.encode(data, new Pbf());
+      const buffer = Buffer.from(pbf);
+      res.set('content-type', 'application/protobuf');
+      res.send(buffer);
+    } else {
+      res.set('content-type', 'application/json; charset=utf-8');
+      res.json(data);
+    }
+  };
+}
 
 module.exports = app => {
   app.get(
@@ -14,9 +30,11 @@ module.exports = app => {
         const params = {
           startDate: req.query.startDate,
           endDate: req.query.endDate,
+          wrapLongitudes: req.query.wrapLongitudes,
         };
         const { format } = req.query;
         const { features } = req.query;
+        const { binary } = req.query;
 
         log.debug(
           `Configuring track loader for dataset ${res.locals.dataset} using additional features ${features}`,
@@ -33,6 +51,7 @@ module.exports = app => {
         log.debug(`Converting the records to format ${format}`);
         const result = trackLoader.formatters[format](records);
         log.debug('Setting year tags');
+
         const startYear = new Date(params.startDate).getFullYear();
         const endYear = new Date(params.endDate).getFullYear();
         res.locals.cacheTags = [
@@ -47,7 +66,8 @@ module.exports = app => {
           res.locals.cacheTags.push(`tracks-year-${i}`);
         }
         log.debug(`Returning track for vessel ${vesselId}`);
-        return res.json(result);
+
+        encodeResponse(res, binary)(result);
       } catch (err) {
         return next(err);
       }

@@ -30,28 +30,29 @@ module.exports = {
         if (exists) {
           log.debug(`Returning cache for ${req.url}`);
           res.setHeader('Content-Encoding', 'gzip');
-          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          if (req.query.binary) {
+            res.set('content-type', 'application/protobuf');
+          } else {
+            res.set('content-type', 'application/json; charset=utf-8');
+          }
           res.removeHeader('Content-Length');
           res.send(exists);
           return;
         }
         res.sendResponse = res.send;
         res.send = async body => {
+          let result = body;
           if (res.statusCode === 200) {
             try {
-              const result = await new Promise((resolve, reject) => {
-                zlib.gzip(
-                  body,
-                  { level: zlib.Z_BEST_COMPRESSION },
-                  (err, data) => {
-                    if (err) {
-                      log.error('Error zipping response');
-                      reject(err);
-                      return;
-                    }
-                    resolve(data);
-                  },
-                );
+              result = await new Promise((resolve, reject) => {
+                zlib.gzip(body, (err, data) => {
+                  if (err) {
+                    log.error('Error zipping response');
+                    reject(err);
+                    return;
+                  }
+                  resolve(data);
+                });
               });
               await redisCache
                 .set(req.url, result, res.locals.cacheTags || [])
@@ -61,10 +62,12 @@ module.exports = {
                 );
             } catch (err) {
               log.error(`Error saving cache for url ${req.url}`);
+              res.end();
             }
           }
-
-          res.sendResponse(body);
+          res.setHeader('Content-Encoding', 'gzip');
+          res.write(result);
+          res.end();
         };
         next();
       } catch (err) {

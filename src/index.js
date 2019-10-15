@@ -1,5 +1,6 @@
 const express = require('express');
 const helmet = require('helmet');
+// const shrinkRay = require('shrink-ray-current');
 const compression = require('compression');
 const cors = require('./middleware/cors.middleware');
 const logMiddleware = require('./middleware/log.middleware');
@@ -13,7 +14,14 @@ app.use(logMiddleware.logger());
 app.use(helmet());
 app.use(cors.simple());
 app.use(redis(['/cache/flush*']));
-app.use(compression());
+// app.use(compression());
+// app.use(
+//   shrinkRay({
+//     brotli: {
+//       quality: 11,
+//     },
+//   }),
+// );
 routes.forEach(registerRoute => registerRoute(app));
 app.use(logMiddleware.errorLogger());
 app.use(errors.handleErrors());

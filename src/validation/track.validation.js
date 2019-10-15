@@ -24,6 +24,14 @@ const tracksValidation = [
   query('format')
     .isIn(['lines', 'points', null])
     .customSanitizer(value => value || 'lines'),
+  query('wrapLongitudes')
+    .optional()
+    .toBoolean()
+    .customSanitizer(value => value || false),
+  query('binary')
+    .optional()
+    .toBoolean()
+    .customSanitizer(value => value || false),
   (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

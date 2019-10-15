@@ -2,8 +2,25 @@ const groupBy = require('lodash/fp/groupBy');
 const flow = require('lodash/fp/flow');
 const sql = require('../db/sql');
 
-const extractCoordinates = records => {
-  return records.map(record => [record.lon, record.lat]);
+const extractCoordinates = (records, wrapLongitudes) => {
+  if (wrapLongitudes === false) {
+    // Hack for renderes like mapbox gl or leaflet to fix antimeridian issues
+    // https://macwright.org/2016/09/26/the-180th-meridian.html
+    let currentLng;
+    let lngOffset = 0;
+    return records.map(({ lon, lat }) => {
+      if (currentLng) {
+        if (lon - currentLng < -180) {
+          lngOffset += 360;
+        } else if (lon - currentLng > 180) {
+          lngOffset -= 360;
+        }
+      }
+      currentLng = lon;
+      return [lon + lngOffset, lat];
+    });
+  }
+  return records.map(({ lon, lat }) => [lon, lat]);
 };
 
 const extractCoordinateProperties = (features, records) => {
@@ -12,11 +29,11 @@ const extractCoordinateProperties = (features, records) => {
       return result;
     }
     const value = records.map(record =>
-      feature.formatter(record[feature.databaseField])
+      feature.formatter(record[feature.databaseField]),
     );
     return {
       ...result,
-      [feature.coordinateProperty]: value
+      [feature.coordinateProperty]: value,
     };
   }, {});
 };
@@ -27,15 +44,18 @@ const featureSettings = {
     coordinateProperty: 'times',
     property: 'timestamp',
     databaseField: 'timestamp',
-    formatter: value => new Date(value).getTime()
+    formatter: value => new Date(value).getTime(),
   },
   fishing: {
-    generateGeoJSONFeatures: (features, records) => {
+    generateGeoJSONFeatures: (features, records, params = {}) => {
       const fishingRecords = records.filter(record => record.score > 0);
-      const coordinates = extractCoordinates(fishingRecords);
+      const coordinates = extractCoordinates(
+        fishingRecords,
+        params.wrapLongitudes,
+      );
       const coordinateProperties = extractCoordinateProperties(
         features,
-        fishingRecords
+        fishingRecords,
       );
 
       return [
@@ -43,44 +63,44 @@ const featureSettings = {
           type: 'Feature',
           properties: {
             type: 'fishing',
-            coordinateProperties
+            coordinateProperties,
           },
           geometry: {
             type: 'MultiPoint',
-            coordinates
-          }
-        }
+            coordinates,
+          },
+        },
       ];
     },
     property: 'fishing',
     databaseField: 'score',
-    formatter: value => value > 0
+    formatter: value => value > 0,
   },
   course: {
     generateGeoJSONFeatures: () => [],
     coordinateProperty: 'courses',
     property: 'course',
     databaseField: 'course',
-    formatter: value => value
+    formatter: value => value,
   },
   speed: {
     generateGeoJSONFeatures: () => [],
     coordinateProperty: 'speeds',
     property: 'speed',
     databaseField: 'speed',
-    formatter: value => value
-  }
+    formatter: value => value,
+  },
 };
 
 const optionalFilter = (value, filter) => (value ? filter : query => query);
 
 const filtersFromParams = params => [
   optionalFilter(params.startDate, query =>
-    query.where('timestamp', '>', params.startDate)
+    query.where('timestamp', '>', params.startDate),
   ),
   optionalFilter(params.endDate, query =>
-    query.where('timestamp', '<', params.endDate)
-  )
+    query.where('timestamp', '<', params.endDate),
+  ),
 ];
 
 module.exports = ({ dataset, additionalFeatures = [], params }) => {
@@ -90,14 +110,14 @@ module.exports = ({ dataset, additionalFeatures = [], params }) => {
   return {
     load(vesselId) {
       const additionalSelectFields = features.map(
-        feature => feature.databaseField
+        feature => feature.databaseField,
       );
       const baseQuery = sql
         .select(
           'seg_id',
           sql.raw('ST_X("position"::geometry) AS "lon"'),
           sql.raw('ST_Y("position"::geometry) AS "lat"'),
-          ...additionalSelectFields
+          ...additionalSelectFields,
         )
         .from(dataset.tracksTable)
         .where('vessel_id', vesselId)
@@ -112,36 +132,39 @@ module.exports = ({ dataset, additionalFeatures = [], params }) => {
 
         const trackGeoJSONFeatures = Object.entries(segments).map(
           ([segment, segmentRecords]) => {
-            const coordinates = extractCoordinates(segmentRecords);
+            const coordinates = extractCoordinates(
+              segmentRecords,
+              params.wrapLongitudes,
+            );
             const coordinateProperties = extractCoordinateProperties(
               features,
-              segmentRecords
+              segmentRecords,
             );
 
             return {
               type: 'Feature',
               geometry: {
                 type: 'LineString',
-                coordinates
+                coordinates,
               },
               properties: {
                 type: 'track',
                 segId: segment,
-                coordinateProperties
-              }
+                coordinateProperties,
+              },
             };
-          }
+          },
         );
 
         const additioanlGeoJSONFeatures = features.reduce((result, feature) => {
           return result.concat(
-            feature.generateGeoJSONFeatures(features, records)
+            feature.generateGeoJSONFeatures(features, records),
           );
         }, []);
 
         return {
           type: 'FeatureCollection',
-          features: [...trackGeoJSONFeatures, ...additioanlGeoJSONFeatures]
+          features: [...trackGeoJSONFeatures, ...additioanlGeoJSONFeatures],
         };
       },
 
@@ -151,7 +174,7 @@ module.exports = ({ dataset, additionalFeatures = [], params }) => {
             const value = feature.formatter(record[feature.databaseField]);
             return {
               ...result,
-              [feature.property]: value
+              [feature.property]: value,
             };
           }, {});
 
@@ -159,20 +182,20 @@ module.exports = ({ dataset, additionalFeatures = [], params }) => {
             type: 'Feature',
             geometry: {
               type: 'Point',
-              coordinates: [record.lon, record.lat]
+              coordinates: [record.lon, record.lat],
             },
             properties: {
               segId: record.seg_id,
-              ...properties
-            }
+              ...properties,
+            },
           };
         });
 
         return {
           type: 'FeatureCollection',
-          features: geoJSONFeatures
+          features: geoJSONFeatures,
         };
-      }
-    }
+      },
+    },
   };
 };

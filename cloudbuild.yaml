@@ -9,6 +9,7 @@ steps:
       '--project=${_PROJECT_NAME}',
       '--region=${_REGION}',
       '--runtime=nodejs10',
+      '--allow-unauthenticated',
       '--trigger-http',
       '--entry-point=entrypoint',
       '--memory=512MB',

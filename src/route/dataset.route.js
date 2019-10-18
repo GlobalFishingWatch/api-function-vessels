@@ -1,3 +1,4 @@
+const protobuf = require('protobufjs');
 const vesselService = require('../service/vessel.service');
 const loadDatasetMiddleware = require('../middleware/load-dataset.middleware');
 const log = require('../log');
@@ -5,6 +6,25 @@ const {
   datasetOfVesselIdValidation,
   datasetValidation,
 } = require('../validation/dataset.validation');
+
+let proto = null;
+
+function encodeResponse(res, type, binary = false) {
+  return async data => {
+    if (binary) {
+      if (!proto) {
+        proto = await protobuf.load(`${__dirname}/../proto/vessels.proto`);
+      }
+      const protoType = proto.lookupType(`vessels.${type}`);
+
+      res.set('content-type', 'application/protobuf');
+      res.send(protoType.encode(protoType.create(data)).finish());
+    } else {
+      res.set('content-type', 'application/json; charset=utf-8');
+      res.json(data);
+    }
+  };
+}
 
 module.exports = app => {
   app.get(
@@ -14,12 +34,11 @@ module.exports = app => {
     async (req, res, next) => {
       try {
         const query = {
-          query: req.params.query,
-          limit: req.params.limit,
-          offset: req.params.offset,
-          queryFields: req.params.queryFields,
+          query: req.query.query,
+          limit: req.query.limit,
+          offset: req.query.offset,
+          queryFields: req.query.queryFields,
         };
-
         log.debug('Querying vessels search index');
         const results = await vesselService({
           dataset: res.locals.dataset,
@@ -29,9 +48,10 @@ module.exports = app => {
           `Returning ${results.entries.length} / ${results.total} results`,
         );
         res.locals.cacheTags = [`dataset`, `dataset-${req.params.dataset}`];
-        return res.json(results);
+
+        encodeResponse(res, 'VesselQuery', req.query.binary)(results);
       } catch (error) {
-        return next(error);
+        next(error);
       }
     },
   );
@@ -55,7 +75,7 @@ module.exports = app => {
           `dataset-${req.params.dataset}`,
           `vessel-${vesselId}`,
         ];
-        return res.json(result);
+        return encodeResponse(res, 'VesselInfo', req.query.binary)(result);
       } catch (error) {
         if (error.statusCode && error.statusCode === 404) {
           return res.sendStatus(404);

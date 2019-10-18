@@ -25,11 +25,9 @@ const tracksValidation = [
     .isIn(['lines', 'points', null])
     .customSanitizer(value => value || 'lines'),
   query('wrapLongitudes')
-    .optional()
     .toBoolean()
     .customSanitizer(value => value || true),
   query('binary')
-    .optional()
     .toBoolean()
     .customSanitizer(value => value || false),
   (req, res, next) => {

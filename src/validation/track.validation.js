@@ -27,7 +27,7 @@ const tracksValidation = [
   query('wrapLongitudes')
     .optional()
     .toBoolean()
-    .customSanitizer(value => value || false),
+    .customSanitizer(value => value || true),
   query('binary')
     .optional()
     .toBoolean()

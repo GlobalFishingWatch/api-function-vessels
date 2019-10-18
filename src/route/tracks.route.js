@@ -1,23 +1,8 @@
-const Pbf = require('pbf');
-const geobuf = require('geobuf');
 const loadDatasetMiddleware = require('../middleware/load-dataset.middleware');
 const trackService = require('../service/tracks.service');
 const log = require('../log');
 const { tracksValidation } = require('../validation/track.validation');
-
-function encodeResponse(res, binary = false) {
-  return data => {
-    if (binary) {
-      const pbf = geobuf.encode(data, new Pbf());
-      const buffer = Buffer.from(pbf);
-      res.set('content-type', 'application/protobuf');
-      res.send(buffer);
-    } else {
-      res.set('content-type', 'application/json; charset=utf-8');
-      res.json(data);
-    }
-  };
-}
+const encodeService = require('../service/encode.service');
 
 module.exports = app => {
   app.get(
@@ -32,6 +17,7 @@ module.exports = app => {
           endDate: req.query.endDate,
           wrapLongitudes: req.query.wrapLongitudes,
         };
+
         const { format } = req.query;
         const { features } = req.query;
         const { binary } = req.query;
@@ -67,7 +53,7 @@ module.exports = app => {
         }
         log.debug(`Returning track for vessel ${vesselId}`);
 
-        encodeResponse(res, binary)(result);
+        encodeService(res, 'geojson', binary)(result);
       } catch (err) {
         return next(err);
       }

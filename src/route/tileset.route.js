@@ -4,6 +4,7 @@ const {
   tilesetOfVesselIdValidation,
   tilesetValidation,
 } = require('../validation/tileset.validation');
+const encodeService = require('../service/encode.service');
 
 module.exports = app => {
   app.get(
@@ -27,7 +28,7 @@ module.exports = app => {
           `Returning ${results.entries.length} / ${results.total} results`,
         );
         res.locals.cacheTags = [`tileset`, `tileset-${req.params.tileset}`];
-        return res.json(results);
+        encodeService(res, 'TilesetVesselQuery', req.query.binary)(results);
       } catch (err) {
         return next(err);
       }
@@ -53,7 +54,9 @@ module.exports = app => {
           `tileset-${req.params.tileset}`,
           `vessel-${vesselId}`,
         ];
-        return res.json(result);
+        return encodeService(res, 'TilesetVesselInfo', req.query.binary)(
+          result,
+        );
       } catch (error) {
         if (error.statusCode && error.statusCode === 404) {
           return res.sendStatus(404);

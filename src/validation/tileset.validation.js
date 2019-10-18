@@ -4,6 +4,7 @@ const tilesetDefault = {
   offset: 0,
   queryFields: [],
   limit: 10,
+  binary: false,
 };
 const checkError = defaultValue => (req, res, next) => {
   const errors = validationResult(req);
@@ -29,12 +30,18 @@ const tilesetValidation = [
   query('queryFields')
     .optional()
     .customSanitizer(value => value.split(',')),
+  query('binary')
+    .toBoolean()
+    .customSanitizer(value => value || false),
   checkError(tilesetDefault),
 ];
 const tilesetOfVesselIdValidation = [
   param('tileset').exists(),
   param('vesselId').exists(),
-  checkError({}),
+  query('binary')
+    .toBoolean()
+    .customSanitizer(value => value || false),
+  checkError({ binary: false }),
 ];
 
 module.exports = {

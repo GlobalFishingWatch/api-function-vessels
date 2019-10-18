@@ -60,12 +60,12 @@ module.exports = {
                   () => log.debug(`Cached ${req.url} `),
                   err => log.error(`Error caching ${req.url}`, err),
                 );
+              res.setHeader('Content-Encoding', 'gzip');
             } catch (err) {
               log.error(`Error saving cache for url ${req.url}`);
-              res.end();
             }
           }
-          res.setHeader('Content-Encoding', 'gzip');
+
           res.write(result);
           res.end();
         };

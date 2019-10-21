@@ -38,6 +38,10 @@ gcloud beta functions deploy vessel-tracks --entry-point=entrypoint --runtime no
 
 ```
 
+### Protobuf: Example usage in front
+
+More info  [here](example-front/README.md)
+
 ## License
 
 Copyright 2019 Global Fishing Watch

@@ -8,3 +8,4 @@ docker-compose.yml
 .git
 .gitignore
 cloudbuild.yaml
+example-front

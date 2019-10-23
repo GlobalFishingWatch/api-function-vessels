@@ -1,4 +1,5 @@
 const vesselService = require('../service/vessel.service');
+const cloudEnpointsMiddleware = require('../middleware/cloud-endpoints.middleware');
 const log = require('../log');
 const {
   tilesetOfVesselIdValidation,
@@ -9,6 +10,7 @@ const encodeService = require('../service/encode.service');
 module.exports = app => {
   app.get(
     '/tilesets/:tileset/vessels',
+    cloudEnpointsMiddleware,
     tilesetValidation,
     async (req, res, next) => {
       try {

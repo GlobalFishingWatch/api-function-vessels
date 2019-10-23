@@ -1,5 +1,6 @@
 const vesselService = require('../service/vessel.service');
 const loadDatasetMiddleware = require('../middleware/load-dataset.middleware');
+const cloudEnpointsMiddleware = require('../middleware/cloud-endpoints.middleware');
 const log = require('../log');
 const {
   datasetOfVesselIdValidation,
@@ -7,22 +8,10 @@ const {
 } = require('../validation/dataset.validation');
 const encodeService = require('../service/encode.service');
 
-async function cloudEndpoint(req, res, next) {
-  try {
-    Object.keys(req.params).forEach(key => {
-      if (req.query.hasOwnProperty(key)) {
-        req.params[key] = req.query[key];
-      }
-    });
-    return next();
-  } catch (err) {
-    return next(err);
-  }
-}
-
 module.exports = app => {
   app.get(
     '/datasets/:dataset/vessels',
+    cloudEnpointsMiddleware,
     datasetValidation,
     loadDatasetMiddleware,
     async (req, res, next) => {
@@ -52,7 +41,7 @@ module.exports = app => {
 
   app.get(
     '/datasets/:dataset/vessels/:vesselId',
-    cloudEndpoint,
+    cloudEnpointsMiddleware,
     datasetOfVesselIdValidation,
     loadDatasetMiddleware,
     async (req, res, next) => {

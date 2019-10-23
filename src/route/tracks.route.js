@@ -1,4 +1,5 @@
 const loadDatasetMiddleware = require('../middleware/load-dataset.middleware');
+const cloudEnpointsMiddleware = require('../middleware/cloud-endpoints.middleware');
 const trackService = require('../service/tracks.service');
 const log = require('../log');
 const { tracksValidation } = require('../validation/track.validation');
@@ -7,6 +8,7 @@ const encodeService = require('../service/encode.service');
 module.exports = app => {
   app.get(
     '/datasets/:dataset/vessels/:vesselId/tracks',
+    cloudEnpointsMiddleware,
     tracksValidation,
     loadDatasetMiddleware,
     async (req, res, next) => {

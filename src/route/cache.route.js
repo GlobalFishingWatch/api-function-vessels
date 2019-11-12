@@ -34,7 +34,7 @@ module.exports = app => {
     }),
     async (req, res, next) => {
       try {
-        await redisCache.redis.flushdb();
+        await redisCache.redis.flushall();
         res.json({ flushall: 'ok' });
       } catch (err) {
         log.error('Error flushing cache');

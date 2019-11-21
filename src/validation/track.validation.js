@@ -6,9 +6,12 @@ const tracksValidation = [
   param('dataset').exists(),
   param('vesselId').exists(),
   // startDate is required and ISO Date format
-  query('startDate').isISO8601(),
+  query('startDate')
+    .optional()
+    .isISO8601(),
   // endDate is required and ISO Date format and greather than startDate
   query('endDate')
+    .optional()
     .isISO8601()
     .bail()
     .custom(

@@ -1,73 +1,76 @@
+const Router = require('koa-router');
+const { koa } = require('auth-middleware');
+const { NotFoundException } = require('../errors/http.error');
 const vesselService = require('../service/vessel.service');
 const loadDatasetMiddleware = require('../middleware/load-dataset.middleware');
-const cloudEnpointsMiddleware = require('../middleware/cloud-endpoints.middleware');
 const log = require('../log');
 const {
-  datasetOfVesselIdValidation,
   datasetValidation,
+  datasetOfVesselIdValidation,
 } = require('../validation/dataset.validation');
 const encodeService = require('../service/encode.service');
 
-module.exports = app => {
-  app.get(
-    '/datasets/:dataset/vessels',
-    cloudEnpointsMiddleware,
-    datasetValidation,
-    loadDatasetMiddleware,
-    async (req, res, next) => {
-      try {
-        const query = {
-          query: req.query.query,
-          limit: req.query.limit,
-          offset: req.query.offset,
-          queryFields: req.query.queryFields,
-        };
-        log.debug('Querying vessels search index');
-        const results = await vesselService({
-          dataset: res.locals.dataset,
-        }).search(query);
+class DatasetRouter {
+  static async getAllVessels(ctx) {
+    const query = {
+      query: ctx.query.query,
+      limit: ctx.query.limit,
+      offset: ctx.query.offset,
+      queryFields: ctx.query.queryFields,
+    };
+    log.debug('Querying vessels search index');
+    const results = await vesselService({
+      dataset: ctx.state.dataset,
+    }).search(query);
 
-        log.debug(
-          `Returning ${results.entries.length} / ${results.total} results`,
-        );
-        res.locals.cacheTags = [`dataset`, `dataset-${req.params.dataset}`];
+    log.debug(`Returning ${results.entries.length} / ${results.total} results`);
+    ctx.state.cacheTags = [`dataset`, `dataset-${ctx.params.dataset}`];
 
-        encodeService(res, 'DatasetVesselQuery', req.query.binary)(results);
-      } catch (error) {
-        next(error);
+    await encodeService(ctx, 'DatasetVesselQuery', ctx.query.binary)(results);
+  }
+
+  static async getVesselById(ctx) {
+    try {
+      const { vesselId } = ctx.params;
+      log.debug(`Looking up vessel information for vessel ${vesselId}`);
+      const result = await vesselService({ dataset: ctx.state.dataset }).get(
+        vesselId,
+      );
+
+      log.debug('Returning vessel information');
+      ctx.state.cacheTags = [
+        `dataset`,
+        'vessel',
+        `dataset-${ctx.params.dataset}`,
+        `vessel-${vesselId}`,
+      ];
+      await encodeService(ctx, 'DatasetVesselInfo', ctx.query.binary)(result);
+    } catch (error) {
+      if (error.statusCode && error.statusCode === 404) {
+        throw new NotFoundException();
       }
-    },
-  );
+      throw error;
+    }
+  }
+}
 
-  app.get(
-    '/datasets/:dataset/vessels/:vesselId',
-    cloudEnpointsMiddleware,
-    datasetOfVesselIdValidation,
-    loadDatasetMiddleware,
-    async (req, res, next) => {
-      try {
-        const { vesselId } = req.params;
-        log.debug(`Looking up vessel information for vessel ${vesselId}`);
-        const result = await vesselService({ dataset: res.locals.dataset }).get(
-          vesselId,
-        );
+const router = new Router({
+  prefix: '/datasets',
+});
+router.use(koa.obtainUser(true));
 
-        log.debug('Returning vessel information');
-        res.locals.cacheTags = [
-          `dataset`,
-          'vessel',
-          `dataset-${req.params.dataset}`,
-          `vessel-${vesselId}`,
-        ];
-        return encodeService(res, 'DatasetVesselInfo', req.query.binary)(
-          result,
-        );
-      } catch (error) {
-        if (error.statusCode && error.statusCode === 404) {
-          return res.sendStatus(404);
-        }
-        return next(error);
-      }
-    },
-  );
-};
+router.get(
+  '/:dataset/vessels',
+  datasetValidation,
+  loadDatasetMiddleware,
+  DatasetRouter.getAllVessels,
+);
+
+router.get(
+  '/:dataset/vessels/:vesselId',
+  datasetOfVesselIdValidation,
+  loadDatasetMiddleware,
+  DatasetRouter.getVesselById,
+);
+
+module.exports = router;

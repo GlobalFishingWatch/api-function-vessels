@@ -1,5 +1,7 @@
+const Router = require('koa-router');
+const { koa } = require('auth-middleware');
+const { NotFoundException } = require('../errors/http.error');
 const vesselService = require('../service/vessel.service');
-const cloudEnpointsMiddleware = require('../middleware/cloud-endpoints.middleware');
 const log = require('../log');
 const {
   tilesetOfVesselIdValidation,
@@ -7,64 +9,61 @@ const {
 } = require('../validation/tileset.validation');
 const encodeService = require('../service/encode.service');
 
-module.exports = app => {
-  app.get(
-    '/tilesets/:tileset/vessels',
-    cloudEnpointsMiddleware,
-    tilesetValidation,
-    async (req, res, next) => {
-      try {
-        const query = {
-          query: req.query.query,
-          limit: req.query.limit,
-          offset: req.query.offset,
-          queryFields: req.query.queryFields,
-        };
+class TilesetRouter {
+  static async getAllVessels(ctx) {
+    const query = {
+      query: ctx.query.query,
+      limit: ctx.query.limit,
+      offset: ctx.query.offset,
+      queryFields: ctx.query.queryFields,
+    };
 
-        log.debug('Querying vessels search index');
-        const results = await vesselService({
-          tileset: req.params.tileset,
-        }).search(query);
+    log.debug('Querying vessels search index');
+    const results = await vesselService({
+      tileset: ctx.params.tileset,
+    }).search(query);
 
-        log.debug(
-          `Returning ${results.entries.length} / ${results.total} results`,
-        );
-        res.locals.cacheTags = [`tileset`, `tileset-${req.params.tileset}`];
-        encodeService(res, 'TilesetVesselQuery', req.query.binary)(results);
-      } catch (err) {
-        return next(err);
+    log.debug(`Returning ${results.entries.length} / ${results.total} results`);
+    ctx.state.cacheTags = [`tileset`, `tileset-${ctx.params.tileset}`];
+    await encodeService(ctx, 'TilesetVesselQuery', ctx.query.binary)(results);
+  }
+
+  static async getVesselById(ctx) {
+    try {
+      const { vesselId } = ctx.params;
+
+      log.debug(`Looking up vessel information for vessel ${vesselId}`);
+      const result = await vesselService({
+        tileset: ctx.params.tileset,
+      }).get(vesselId);
+
+      log.debug('Returning vessel information');
+      ctx.state.cacheTags = [
+        `tileset`,
+        'vessel',
+        `tileset-${ctx.params.tileset}`,
+        `vessel-${vesselId}`,
+      ];
+      return encodeService(ctx, 'TilesetVesselInfo', ctx.query.binary)(result);
+    } catch (error) {
+      if (error.statusCode && error.statusCode === 404) {
+        throw new NotFoundException();
       }
-    },
-  );
+      throw error;
+    }
+  }
+}
 
-  app.get(
-    '/tilesets/:tileset/vessels/:vesselId',
-    tilesetOfVesselIdValidation,
-    async (req, res, next) => {
-      try {
-        const { vesselId } = req.params;
+const router = new Router({
+  prefix: '/tilesets',
+});
+router.use(koa.obtainUser(true));
 
-        log.debug(`Looking up vessel information for vessel ${vesselId}`);
-        const result = await vesselService({
-          tileset: req.params.tileset,
-        }).get(vesselId);
+router.get('/:tileset/vessels', tilesetValidation, TilesetRouter.getAllVessels);
 
-        log.debug('Returning vessel information');
-        res.locals.cacheTags = [
-          `tileset`,
-          'vessel',
-          `tileset-${req.params.tileset}`,
-          `vessel-${vesselId}`,
-        ];
-        return encodeService(res, 'TilesetVesselInfo', req.query.binary)(
-          result,
-        );
-      } catch (error) {
-        if (error.statusCode && error.statusCode === 404) {
-          return res.sendStatus(404);
-        }
-        return next(error);
-      }
-    },
-  );
-};
+router.get(
+  '/tilesets/:tileset/vessels/:vesselId',
+  tilesetOfVesselIdValidation,
+  TilesetRouter.getVesselById,
+);
+module.exports = router;

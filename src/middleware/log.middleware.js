@@ -3,44 +3,34 @@ const log = require('../log');
 
 module.exports = {
   logger() {
-    return (req, res, next) => {
-      req.loggingStartTime = new Date();
-
-      const originalEnd = res.end;
-      res.end = (chunk, encoding) => {
-        res.end = originalEnd;
-        res.end(chunk, encoding);
-
-        const latency = (new Date() - req.loggingStartTime) / 1000;
+    return async (ctx, next) => {
+      try {
+        const loggingStartTime = new Date();
+        await next();
+        const latency = (new Date() - loggingStartTime) / 1000;
 
         const httpRequest = {
-          requestMethod: req.method,
+          requestMethod: ctx.method,
           requestUrl: url.format({
-            protocol: req.protocol,
-            host: req.hostname,
-            pathname: req.originalUrl,
+            protocol: ctx.protocol,
+            host: ctx.hostname,
+            pathname: ctx.originalUrl,
           }),
-          requestSize: req.socket.bytesRead,
-          status: res.statusCode,
-          userAgent: req.get('user-agent'),
-          remoteIp: req.ip,
+          requestSize: ctx.socket.bytesRead,
+          status: ctx.status,
+          userAgent: ctx.get('user-agent'),
+          remoteIp: ctx.ip,
           latency: `${latency}s`,
         };
 
-        log.info(`HTTP ${req.method} ${req.originalUrl}`, { httpRequest });
-      };
-
-      next();
-    };
-  },
-
-  errorLogger() {
-    return (err, req, res, next) => {
-      const message = err.message || '(no error message)';
-      const stack = err.stack || '(no stack trace)';
-      const logMessage = [`uncaught exception ${message}:`, stack].join('\n');
-      log.error(logMessage);
-      next(err);
+        log.info(`HTTP ${ctx.method} ${ctx.originalUrl}`, { httpRequest });
+      } catch (err) {
+        const message = err.message || '(no error message)';
+        const stack = err.stack || '(no stack trace)';
+        const logMessage = [`uncaught exception ${message}:`, stack].join('\n');
+        log.error(logMessage);
+        throw err;
+      }
     };
   },
 };

@@ -1,6 +1,8 @@
 const Router = require('koa-router');
-const { koa } = require('auth-middleware');
-const { NotFoundException } = require('../errors/http.error');
+const {
+  koa,
+  errors: { NotFoundException },
+} = require('auth-middleware');
 const vesselService = require('../service/vessel.service');
 const log = require('../log');
 const {

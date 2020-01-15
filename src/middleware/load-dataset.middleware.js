@@ -1,6 +1,8 @@
 const datasets = require('../service/dataset.service');
 const log = require('../log');
-const { NotFoundException } = require('../errors/http.error');
+const {
+  errors: { NotFoundException },
+} = require('auth-middleware');
 
 module.exports = async (ctx, next) => {
   const datasetId = ctx.params.dataset;

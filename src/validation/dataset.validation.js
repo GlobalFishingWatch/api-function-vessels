@@ -1,5 +1,7 @@
 const Joi = require('@hapi/joi');
-const { UnprocessableEntityException } = require('../errors/http.error');
+const {
+  errors: { UnprocessableEntityException },
+} = require('auth-middleware');
 
 const datasetDefault = {
   offset: 0,

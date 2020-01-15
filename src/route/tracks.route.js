@@ -61,6 +61,9 @@ router.use(koa.obtainUser(true));
 
 router.get(
   '/:dataset/vessels/:vesselId/tracks',
+  koa.checkPermissionsWithRequestParams([
+    { action: 'read', type: 'dataset', valueParam: 'dataset' },
+  ]),
   tracksValidation,
   loadDatasetMiddleware,
   TracksRouter.getTracks,

@@ -1,7 +1,6 @@
 const {
-  HttpException,
-  UnprocessableEntityException,
-} = require('../errors/http.error');
+  errors: { HttpException, UnprocessableEntityException },
+} = require('auth-middleware');
 
 const swaggerError2ValidationError = errors => ({
   fields: errors.map(error => ({

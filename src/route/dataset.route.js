@@ -1,6 +1,9 @@
 const Router = require('koa-router');
-const { koa } = require('auth-middleware');
-const { NotFoundException } = require('../errors/http.error');
+const {
+  koa,
+  errors: { NotFoundException },
+} = require('auth-middleware');
+
 const vesselService = require('../service/vessel.service');
 const loadDatasetMiddleware = require('../middleware/load-dataset.middleware');
 const log = require('../log');
@@ -61,6 +64,9 @@ router.use(koa.obtainUser(true));
 
 router.get(
   '/:dataset/vessels',
+  koa.checkPermissionsWithRequestParams([
+    { action: 'read', type: 'dataset', valueParam: 'dataset' },
+  ]),
   datasetValidation,
   loadDatasetMiddleware,
   DatasetRouter.getAllVessels,
@@ -68,6 +74,9 @@ router.get(
 
 router.get(
   '/:dataset/vessels/:vesselId',
+  koa.checkPermissionsWithRequestParams([
+    { action: 'read', type: 'dataset', valueParam: 'dataset' },
+  ]),
   datasetOfVesselIdValidation,
   loadDatasetMiddleware,
   DatasetRouter.getVesselById,

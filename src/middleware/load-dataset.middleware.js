@@ -8,7 +8,7 @@ module.exports = async (ctx, next) => {
   const datasetId = ctx.params.dataset;
 
   log.debug(`Loading dataset ${datasetId}`);
-  const dataset = await datasets.get(datasetId);
+  const dataset = await datasets.get(ctx, datasetId);
   if (!dataset) {
     log.debug(`Unable to load dataset ${datasetId}`);
     throw new NotFoundException(`Unable to load dataset ${datasetId}`);

@@ -1,14 +1,14 @@
-const request = require("request-promise");
-const { StatusCodeError } = require("request-promise/errors");
-const config = require("../config");
+const { StatusCodeError } = require('request-promise/errors');
+const {
+  koa: { request },
+} = require('auth-middleware');
 
 module.exports = {
-  async get(id) {
+  async get(ctx, id) {
     try {
-      const response = await request({
-        baseUrl: config.platform.settingsServer,
+      const response = await request(ctx, {
         uri: `/datasets/${id}`,
-        json: true
+        json: true,
       });
 
       return response;
@@ -21,12 +21,11 @@ module.exports = {
     }
   },
 
-  async getMultiple(ids) {
+  async getMultiple(ctx, ids) {
     try {
-      const response = await request({
-        baseUrl: config.platform.settingsServer,
-        uri: `/datasets?ids=${ids.join(",")}`,
-        json: true
+      const response = await request(ctx, {
+        uri: `/datasets?ids=${ids.join(',')}`,
+        json: true,
       });
 
       return response;
@@ -37,5 +36,5 @@ module.exports = {
 
       throw err;
     }
-  }
+  },
 };

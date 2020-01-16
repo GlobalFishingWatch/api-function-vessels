@@ -37,10 +37,10 @@ async function tracksValidation(ctx, next) {
     } else {
       ctx.query.features = [];
     }
-    await next();
   } catch (err) {
     throw new UnprocessableEntityException('Invalid query', err.details);
   }
+  await next();
 }
 
 module.exports = {

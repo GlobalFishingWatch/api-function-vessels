@@ -38,10 +38,10 @@ async function tilesetValidation(ctx, next) {
     if (ctx.query.queryFields) {
       ctx.query.queryFields = ctx.query.queryFields.split(',');
     }
-    await next();
   } catch (err) {
     throw new UnprocessableEntityException('Invalid query', err.details);
   }
+  await next();
 }
 
 async function tilesetOfVesselIdValidation(ctx, next) {
@@ -50,9 +50,9 @@ async function tilesetOfVesselIdValidation(ctx, next) {
     Object.keys(value).forEach(k => {
       ctx.query[k] = value[k];
     });
-    await next();
   } catch (err) {
     throw new UnprocessableEntityException('Invalid query', err.details);
   }
+  await next();
 }
 module.exports = { tilesetValidation, tilesetOfVesselIdValidation };

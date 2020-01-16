@@ -64,9 +64,9 @@ router.use(koa.obtainUser(true));
 
 router.get(
   '/:dataset/vessels',
-  koa.checkPermissionsWithRequestParams([
-    { action: 'read', type: 'dataset', valueParam: 'dataset' },
-  ]),
+  // koa.checkPermissionsWithRequestParams([
+  //   { action: 'read', type: 'dataset', valueParam: 'dataset' },
+  // ]),
   datasetValidation,
   loadDatasetMiddleware,
   DatasetRouter.getAllVessels,

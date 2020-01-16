@@ -44,6 +44,9 @@ module.exports = {
         let result = ctx.body;
         try {
           result = await new Promise((resolve, reject) => {
+            if (!ctx.query.binary) {
+              ctx.body = JSON.stringify(ctx.body);
+            }
             zlib.gzip(ctx.body, (err, data) => {
               if (err) {
                 log.error('Error zipping response');

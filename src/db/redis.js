@@ -2,7 +2,7 @@ const RedisCache = require('./redis-tag-cache');
 const config = require('../config');
 
 let cache = null;
-if (config.redis.enabled) {
+if (config.redis.enabled === 'true') {
   cache = new RedisCache({
     redis: {
       port: config.redis.port,

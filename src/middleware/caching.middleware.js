@@ -16,7 +16,7 @@ module.exports = {
   redis(patternsNotCache = []) {
     const urlPatternsNotCache = patternsNotCache.map(p => new UrlPattern(p));
     return async (ctx, next) => {
-      if (!config.redis.enabled) {
+      if (config.redis.enabled === 'false') {
         await next();
         return;
       }

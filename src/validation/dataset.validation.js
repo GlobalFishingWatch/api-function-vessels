@@ -6,6 +6,7 @@ const {
 const datasetDefault = {
   offset: 0,
   queryFields: [],
+  querySuggestions: false,
   limit: 10,
   binary: false,
 };
@@ -18,6 +19,7 @@ const schemaDataset = Joi.object({
   query: Joi.string().required(),
   binary: Joi.boolean().default(datasetDefault.binary),
   queryFields: Joi.string().default(datasetDefault.queryFields),
+  querySuggestions: Joi.boolean().default(datasetDefault.querySuggestions),
   offset: Joi.number()
     .integer()
     .min(0)

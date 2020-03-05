@@ -18,6 +18,7 @@ class TilesetRouter {
       limit: ctx.query.limit,
       offset: ctx.query.offset,
       queryFields: ctx.query.queryFields,
+      querySuggestions: ctx.query.querySuggestions,
     };
 
     log.debug('Querying vessels search index');

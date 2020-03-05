@@ -185,6 +185,13 @@ paths:
             type: array
             items:
               type: string
+        - name: querySuggestions
+          in: query
+          description: |
+            Includes suggested results for the given query
+          schema:
+            type: boolean
+            default: false
         - name: limit
           in: query
           description: |
@@ -282,6 +289,13 @@ paths:
             type: array
             items:
               type: string
+        - name: querySuggestions
+          in: query
+          description: |
+            Includes suggested results for the given query
+          schema:
+            type: boolean
+            default: false
         - name: limit
           in: query
           description: |

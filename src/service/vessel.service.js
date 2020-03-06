@@ -28,6 +28,22 @@ const transformSearchResults = ({ query, source }) => results => ({
   entries: results.hits.hits.map(transformSearchResult(source)),
 });
 
+const transformSuggestionsResults = ({
+  results,
+  source,
+}) => suggestionResults => {
+  const suggestionResultsTransformed = suggestionResults.hits.hits.map(
+    transformSearchResult(source),
+  );
+  if (!results.length) return suggestionResultsTransformed;
+
+  // Remove possible duplicates
+  return suggestionResultsTransformed.filter(
+    result =>
+      !results.some(suggestedResult => suggestedResult.id === result.id),
+  );
+};
+
 module.exports = source => {
   const index = source.dataset
     ? source.dataset.vesselIndex
@@ -36,7 +52,7 @@ module.exports = source => {
   log.debug(`Searching in elasticsearch index ${index}`);
 
   return {
-    search(query) {
+    async search(query) {
       const elasticSearchQuery = {
         index,
         from: query.offset || 0,
@@ -52,9 +68,36 @@ module.exports = source => {
         },
       };
 
-      return elasticsearch
+      const results = await elasticsearch
         .search(elasticSearchQuery)
         .then(transformSearchResults({ query, source }));
+
+      if (query.querySuggestions) {
+        const elasticSearchQueryFuzzy = {
+          ...elasticSearchQuery,
+          body: {
+            query: {
+              query_string: {
+                ...elasticSearchQuery.body.query.query_string,
+                query: `${query.query}~`,
+              },
+            },
+          },
+        };
+
+        const suggestions = await elasticsearch
+          .search(elasticSearchQueryFuzzy)
+          .then(
+            transformSuggestionsResults({
+              query,
+              source,
+              results: results.entries,
+            }),
+          );
+        results.suggestions = suggestions;
+      }
+
+      return results;
     },
 
     get(vesselId) {

@@ -6,6 +6,7 @@ const {
 const tilesetDefault = {
   offset: 0,
   queryFields: [],
+  querySuggestions: false,
   limit: 10,
   binary: false,
 };
@@ -18,6 +19,7 @@ const schemaTileset = Joi.object({
   query: Joi.string().required(),
   binary: Joi.boolean().default(tilesetDefault.binary),
   queryFields: Joi.string().default(tilesetDefault.queryFields),
+  querySuggestions: Joi.boolean().default(tilesetDefault.querySuggestions),
   offset: Joi.number()
     .integer()
     .min(0)

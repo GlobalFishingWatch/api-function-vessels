@@ -16,10 +16,11 @@ const encodeService = require('../service/encode.service');
 class DatasetRouter {
   static async getAllVessels(ctx) {
     const query = {
-      query: ctx.query.query,
       limit: ctx.query.limit,
       offset: ctx.query.offset,
+      query: ctx.query.query,
       queryFields: ctx.query.queryFields,
+      querySuggestions: ctx.query.querySuggestions,
     };
     log.debug('Querying vessels search index');
     const results = await vesselService({

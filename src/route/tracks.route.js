@@ -57,7 +57,7 @@ class TracksRouter {
 const router = new Router({
   prefix: '/datasets',
 });
-router.use(koa.obtainUser(true));
+router.use(koa.obtainUser(false));
 
 router.get(
   '/:dataset/vessels/:vesselId/tracks',

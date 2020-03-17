@@ -69,17 +69,6 @@ module.exports = greenpeace.sanitizeEnvironment(environments, {
     }),
   },
 
-  platform: {
-    settingsServer: greenpeace.entry({
-      key: 'PLATFORM_SETTINGS_SERVER',
-      doc: 'Protocol, host and port of the settings API',
-      defaults: {
-        development: 'https://settings.api.dev.globalfishingwatch.org',
-      },
-      required: true,
-    }),
-  },
-
   gcloud: {
     sql: {
       user: greenpeace.entry({

@@ -1,10 +1,14 @@
+const {
+  errors: { HttpException, UnprocessableEntityException },
+} = require('auth-middleware');
+
 const swaggerError2ValidationError = errors => ({
   fields: errors.map(error => ({
-    field: error.param,
+    field: error.path.join('.'),
     errors: [
       {
         code: 422,
-        message: `${error.msg}${error.value ? `: ${error.value}` : ''}`,
+        message: `${error.message}`,
       },
     ],
   })),
@@ -12,20 +16,33 @@ const swaggerError2ValidationError = errors => ({
   general: [],
 });
 
+async function handleErrors(ctx, next) {
+  try {
+    await next();
+  } catch (err) {
+    console.log(err);
+    if (err instanceof HttpException) {
+      if (err instanceof UnprocessableEntityException) {
+        ctx.status = err.code;
+        ctx.body = swaggerError2ValidationError(err.params);
+      } else {
+        ctx.throw(err.code, err.message);
+      }
+    } else {
+      if (ctx.status === 400) {
+        throw err;
+      }
+      if (err.status === 401) {
+        ctx.status = 401;
+        ctx.set('WWW-Authenticate', 'Basic');
+        ctx.body = 'cant haz that';
+        return;
+      }
+      ctx.throw(500, 'Generic error');
+    }
+  }
+}
+
 module.exports = {
-  handleErrors() {
-    return (err, req, res, next) => {
-      if (res.headersSent) {
-        return next(err);
-      }
-
-      if (err.validation) {
-        return res
-          .status(400)
-          .json(swaggerError2ValidationError(err.validation));
-      }
-
-      return res.sendStatus(500);
-    };
-  },
+  handleErrors,
 };

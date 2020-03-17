@@ -1,50 +1,60 @@
-const { query, param, validationResult } = require('express-validator');
+const Joi = require('@hapi/joi');
+const {
+  errors: { UnprocessableEntityException },
+} = require('auth-middleware');
 
 const tilesetDefault = {
   offset: 0,
   queryFields: [],
+  querySuggestions: false,
   limit: 10,
   binary: false,
 };
-const checkError = defaultValue => (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return next({ validation: errors.array() });
-  }
-  req.query = { ...defaultValue, ...req.query };
-  return next();
-};
-const tilesetValidation = [
-  param('tileset').exists(),
-  query('query').exists(),
-  // limit (optional) should be number greather than 0. Default value 10
-  query('limit')
-    .optional()
-    .isInt({ min: 1, max: 25 })
-    .toInt(10),
-  // offset (optional) should be number greather than 0. Default value 0
-  query('offset')
-    .optional()
-    .isInt({ min: 0 })
-    .toInt(10),
-  query('queryFields')
-    .optional()
-    .customSanitizer(value => value.split(',')),
-  query('binary')
-    .toBoolean()
-    .customSanitizer(value => value || false),
-  checkError(tilesetDefault),
-];
-const tilesetOfVesselIdValidation = [
-  param('tileset').exists(),
-  param('vesselId').exists(),
-  query('binary')
-    .toBoolean()
-    .customSanitizer(value => value || false),
-  checkError({ binary: false }),
-];
+const schemaTileset = Joi.object({
+  limit: Joi.number()
+    .integer()
+    .min(1)
+    .max(25)
+    .default(tilesetDefault.limit),
+  query: Joi.string().required(),
+  binary: Joi.boolean().default(tilesetDefault.binary),
+  queryFields: Joi.string().default(tilesetDefault.queryFields),
+  querySuggestions: Joi.boolean().default(tilesetDefault.querySuggestions),
+  offset: Joi.number()
+    .integer()
+    .min(0)
+    .default(tilesetDefault.offset),
+});
 
-module.exports = {
-  tilesetValidation,
-  tilesetOfVesselIdValidation,
-};
+const schemaVesselTileset = Joi.object({
+  binary: Joi.boolean().default(tilesetDefault.binary),
+});
+
+async function tilesetValidation(ctx, next) {
+  try {
+    const value = await schemaTileset.validateAsync(ctx.request.query);
+
+    Object.keys(value).forEach(k => {
+      ctx.query[k] = value[k];
+    });
+    if (ctx.query.queryFields) {
+      ctx.query.queryFields = ctx.query.queryFields.split(',');
+    }
+  } catch (err) {
+    throw new UnprocessableEntityException('Invalid query', err.details);
+  }
+  await next();
+}
+
+async function tilesetOfVesselIdValidation(ctx, next) {
+  try {
+    const value = await schemaVesselTileset.validateAsync(ctx.request.query);
+    Object.keys(value).forEach(k => {
+      ctx.query[k] = value[k];
+    });
+  } catch (err) {
+    throw new UnprocessableEntityException('Invalid query', err.details);
+  }
+  await next();
+}
+module.exports = { tilesetValidation, tilesetOfVesselIdValidation };

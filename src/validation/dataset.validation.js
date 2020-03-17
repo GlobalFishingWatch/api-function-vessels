@@ -1,50 +1,60 @@
-const { query, param, validationResult } = require('express-validator');
+const Joi = require('@hapi/joi');
+const {
+  errors: { UnprocessableEntityException },
+} = require('auth-middleware');
 
 const datasetDefault = {
   offset: 0,
   queryFields: [],
+  querySuggestions: false,
   limit: 10,
   binary: false,
 };
-const checkError = defaultValue => (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return next({ validation: errors.array() });
-  }
-  req.query = { ...defaultValue, ...req.query };
-  return next();
-};
-const datasetValidation = [
-  param('dataset').exists(),
-  query('query').exists(),
-  // limit (optional) should be number greather than 0. Default value 10
-  query('limit')
-    .optional()
-    .isInt({ min: 1, max: 25 })
-    .toInt(10),
-  // offset (optional) should be number greather than 0. Default value 0
-  query('offset')
-    .optional()
-    .isInt({ min: 0 })
-    .toInt(10),
-  query('queryFields')
-    .optional()
-    .customSanitizer(value => value.split(',')),
-  query('binary')
-    .toBoolean()
-    .customSanitizer(value => value || false),
-  checkError(datasetDefault),
-];
-const datasetOfVesselIdValidation = [
-  param('dataset').exists(),
-  param('vesselId').exists(),
-  query('binary')
-    .toBoolean()
-    .customSanitizer(value => value || false),
-  checkError({ binary: false }),
-];
+const schemaDataset = Joi.object({
+  limit: Joi.number()
+    .integer()
+    .min(1)
+    .max(25)
+    .default(datasetDefault.limit),
+  query: Joi.string().required(),
+  binary: Joi.boolean().default(datasetDefault.binary),
+  queryFields: Joi.string().default(datasetDefault.queryFields),
+  querySuggestions: Joi.boolean().default(datasetDefault.querySuggestions),
+  offset: Joi.number()
+    .integer()
+    .min(0)
+    .default(datasetDefault.offset),
+});
 
-module.exports = {
-  datasetValidation,
-  datasetOfVesselIdValidation,
-};
+const schemaVesselDataset = Joi.object({
+  binary: Joi.boolean().default(false),
+});
+
+async function datasetValidation(ctx, next) {
+  try {
+    const value = await schemaDataset.validateAsync(ctx.request.query);
+
+    Object.keys(value).forEach(k => {
+      ctx.query[k] = value[k];
+    });
+    if (ctx.query.queryFields && !Array.isArray(ctx.query.queryFields)) {
+      ctx.query.queryFields = ctx.query.queryFields.split(',');
+    }
+  } catch (err) {
+    throw new UnprocessableEntityException('Invalid query', err.details);
+  }
+  await next();
+}
+
+async function datasetOfVesselIdValidation(ctx, next) {
+  try {
+    const value = await schemaVesselDataset.validateAsync(ctx.request.query);
+    Object.keys(value).forEach(k => {
+      ctx.query[k] = value[k];
+    });
+  } catch (err) {
+    throw new UnprocessableEntityException('Invalid query', err.details);
+  }
+  await next();
+}
+module.exports = { datasetValidation, datasetOfVesselIdValidation };

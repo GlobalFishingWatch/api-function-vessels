@@ -1,45 +1,37 @@
-const basicAuth = require('express-basic-auth');
+const auth = require('koa-basic-auth');
+const Router = require('koa-router');
 const log = require('../log');
 const config = require('../config');
 const redisCache = require('../db/redis');
 
-module.exports = app => {
-  app.get(
-    '/cache/flush/:tag',
-    basicAuth({
-      users: {
-        [config.auth.username]: config.auth.password,
-      },
-      challenge: true,
-      realm: 'API-Vessels-Tracks',
-    }),
-    async (req, res, next) => {
-      try {
-        await redisCache.invalidate(req.params.tag);
-        res.json({ [req.params.tag]: 'ok' });
-      } catch (err) {
-        log.error('Error flushing cache');
-        next(err);
-      }
-    },
-  );
-  app.get(
-    '/cache/flush-all',
-    basicAuth({
-      users: {
-        [config.auth.username]: config.auth.password,
-      },
-      challenge: true,
-      realm: 'API-Vessels-Tracks',
-    }),
-    async (req, res, next) => {
-      try {
-        await redisCache.redis.flushall();
-        res.json({ flushall: 'ok' });
-      } catch (err) {
-        log.error('Error flushing cache');
-        next(err);
-      }
-    },
-  );
-};
+class CacheRouter {
+  static async flushAll(ctx) {
+    try {
+      await redisCache.redis.flushall();
+      ctx.body = { flushall: 'ok' };
+    } catch (err) {
+      log.error('Error flushing cache');
+      throw err;
+    }
+  }
+
+  static async flushByTag(ctx) {
+    try {
+      await redisCache.invalidate(ctx.params.tag);
+      ctx.body = { [ctx.params.tag]: 'ok' };
+    } catch (err) {
+      log.error('Error flushing cache');
+      throw err;
+    }
+  }
+}
+
+const router = new Router({
+  prefix: '/cache',
+});
+router.use(auth({ name: config.auth.username, pass: config.auth.password }));
+
+router.get('/flush/:tag', CacheRouter.flushByTag);
+router.get('/flush-all', CacheRouter.flushAll);
+
+module.exports = router;

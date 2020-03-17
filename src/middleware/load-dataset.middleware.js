@@ -1,19 +1,18 @@
 const datasets = require('../service/dataset.service');
 const log = require('../log');
+const {
+  errors: { NotFoundException },
+} = require('auth-middleware');
 
-module.exports = async (req, res, next) => {
-  try {
-    const datasetId = req.params.dataset;
-
-    log.debug(`Loading dataset ${datasetId}`);
-    const dataset = await datasets.get(datasetId);
-    if (!dataset) {
-      log.debug(`Unable to load dataset ${datasetId}`);
-      return res.sendStatus(404);
-    }
-    res.locals.dataset = dataset;
-    return next();
-  } catch (err) {
-    return next(err);
+module.exports = async (ctx, next) => {
+  const datasetId = ctx.params.dataset;
+  log.debug(`Loading dataset ${datasetId}`);
+  const dataset = await datasets.get(ctx, datasetId);
+  if (!dataset) {
+    log.debug(`Unable to load dataset ${datasetId}`);
+    throw new NotFoundException(`Unable to load dataset ${datasetId}`);
   }
+
+  ctx.state.dataset = dataset;
+  await next();
 };

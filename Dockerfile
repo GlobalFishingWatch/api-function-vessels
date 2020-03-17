@@ -22,6 +22,8 @@ COPY .eslintrc.json /opt/project/
 COPY index.js /opt/project/
 COPY src /opt/project/src
 
+RUN npm update auth-middleware
+
 ################################################################################
 # Development environment
 ################################################################################

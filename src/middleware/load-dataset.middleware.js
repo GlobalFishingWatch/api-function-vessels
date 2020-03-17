@@ -7,6 +7,9 @@ const {
 module.exports = async (ctx, next) => {
   const datasetId = ctx.params.dataset;
   log.debug(`Loading dataset ${datasetId}`);
+  if (ctx.params.dataset.indexOf(':') === -1) {
+    ctx.params.dataset += ':latest';
+  }
   const dataset = await datasets.get(ctx, datasetId);
   if (!dataset) {
     log.debug(`Unable to load dataset ${datasetId}`);

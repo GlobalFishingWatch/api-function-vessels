@@ -60,12 +60,15 @@ class TilesetRouter {
 const router = new Router({
   prefix: '/tilesets',
 });
-router.use(koa.obtainUser(true));
 
+router.use(koa.obtainUser(false));
+
+// check user has permissions in dataset that tileset belongs to
 router.get('/:tileset/vessels', tilesetValidation, TilesetRouter.getAllVessels);
 
+// check user has permissions in dataset that tileset belongs to
 router.get(
-  '/tilesets/:tileset/vessels/:vesselId',
+  '/:tileset/vessels/:vesselId',
   tilesetOfVesselIdValidation,
   TilesetRouter.getVesselById,
 );

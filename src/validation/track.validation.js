@@ -17,6 +17,7 @@ const schemaTracks = Joi.object({
     .default('lines'),
   query: Joi.boolean().default(false),
   binary: Joi.boolean().default(false),
+  wrapLongitudes: Joi.boolean().default(false),
 });
 
 async function tracksValidation(ctx, next) {

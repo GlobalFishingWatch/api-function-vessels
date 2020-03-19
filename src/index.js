@@ -15,7 +15,7 @@ const tilesetRouter = require('./route/tileset.route');
 const tracksRouter = require('./route/tracks.route');
 
 const app = new Koa();
-if (process.env.ENV === 'dev') {
+if (process.env.NODE_ENV === 'development') {
   app.use(Logger());
 }
 

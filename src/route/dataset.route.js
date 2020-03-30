@@ -12,6 +12,7 @@ const {
   datasetOfVesselIdValidation,
 } = require('../validation/dataset.validation');
 const encodeService = require('../service/encode.service');
+const { redis } = require('../middleware/caching.middleware');
 
 class DatasetRouter {
   static async getAllVessels(ctx) {
@@ -68,6 +69,7 @@ router.get(
   koa.checkPermissionsWithRequestParams([
     { action: 'read', type: 'dataset', valueParam: 'dataset' },
   ]),
+  redis([]),
   datasetValidation,
   loadDatasetMiddleware,
   DatasetRouter.getAllVessels,
@@ -78,6 +80,7 @@ router.get(
   koa.checkPermissionsWithRequestParams([
     { action: 'read', type: 'dataset', valueParam: 'dataset' },
   ]),
+  redis([]),
   datasetOfVesselIdValidation,
   loadDatasetMiddleware,
   DatasetRouter.getVesselById,

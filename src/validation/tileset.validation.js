@@ -37,7 +37,7 @@ async function tilesetValidation(ctx, next) {
     Object.keys(value).forEach(k => {
       ctx.query[k] = value[k];
     });
-    if (ctx.query.queryFields) {
+    if (!Array.isArray(ctx.query.queryFields) && ctx.queryFields) {
       ctx.query.queryFields = ctx.query.queryFields.split(',');
     }
   } catch (err) {

@@ -5,6 +5,7 @@ const trackService = require('../service/tracks.service');
 const log = require('../log');
 const { tracksValidation } = require('../validation/track.validation');
 const encodeService = require('../service/encode.service');
+const { redis } = require('../middleware/caching.middleware');
 
 class TracksRouter {
   static async getTracks(ctx) {
@@ -64,6 +65,7 @@ router.get(
   koa.checkPermissionsWithRequestParams([
     { action: 'read', type: 'dataset', valueParam: 'dataset' },
   ]),
+  redis([]),
   tracksValidation,
   loadDatasetMiddleware,
   TracksRouter.getTracks,

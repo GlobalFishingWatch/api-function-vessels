@@ -9,6 +9,8 @@ const {
   tilesetOfVesselIdValidation,
   tilesetValidation,
 } = require('../validation/tileset.validation');
+const { checkTileset } = require('../middleware/permissions.middleware');
+const { redis } = require('../middleware/caching.middleware');
 const encodeService = require('../service/encode.service');
 
 class TilesetRouter {
@@ -63,12 +65,18 @@ const router = new Router({
 
 router.use(koa.obtainUser(false));
 
-// check user has permissions in dataset that tileset belongs to
-router.get('/:tileset/vessels', tilesetValidation, TilesetRouter.getAllVessels);
+router.get(
+  '/:tileset/vessels',
+  checkTileset(),
+  redis([]),
+  tilesetValidation,
+  TilesetRouter.getAllVessels,
+);
 
-// check user has permissions in dataset that tileset belongs to
 router.get(
   '/:tileset/vessels/:vesselId',
+  checkTileset(),
+  redis([]),
   tilesetOfVesselIdValidation,
   TilesetRouter.getVesselById,
 );

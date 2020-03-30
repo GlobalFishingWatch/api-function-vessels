@@ -24,7 +24,6 @@ app.use(Body());
 app.use(HelmetMiddleware());
 app.use(errors.handleErrors);
 app.use(logMiddleware.logger());
-app.use(redis(['/cache/flush*', '/health']));
 app.use(koa.health());
 
 app.use(cacheRouter.routes()).use(cacheRouter.allowedMethods());

@@ -1,6 +1,11 @@
 syntax = "proto3";
 package vessels;
 
+
+message Track {
+  repeated float data = 1;
+}
+
 message TilesetVesselQuery {
   string query = 1;
   uint32 total = 2;

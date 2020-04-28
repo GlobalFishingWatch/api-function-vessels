@@ -24,6 +24,7 @@ async function handleErrors(ctx, next) {
     if (err instanceof HttpException) {
       if (err instanceof UnprocessableEntityException) {
         ctx.status = err.code;
+        console.log('params', err.params);
         ctx.body = swaggerError2ValidationError(err.params);
       } else {
         ctx.throw(err.code, err.message);

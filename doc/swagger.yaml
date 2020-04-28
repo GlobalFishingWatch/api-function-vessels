@@ -385,7 +385,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: features
+        - name: fields
           in: query
           description: |
             Comma-separated list of additional features to include in the
@@ -399,6 +399,8 @@ paths:
                 - fishing
                 - speed
                 - course
+                - lonlat
+                - timestamp
         - name: startDate
           in: query
           description: |
@@ -418,16 +420,17 @@ paths:
         - name: format
           in: query
           description: |
-            Specific encoding format to use for the track. While the track is
-            always returned as GeoJSON, you can ask for either a single
-            `LineString` feature containing all the points in the track, or a
-            `FeatureCollection` containing a `Point` feature for every point in
-            the track.
+            Specific encoding format to use for the track. Possible values lines, points or valueArray.
+            valueArray: is a custom array with all the values.
+            lines: Geojson with a single
+            `LineString` feature containing all the points in the track
+            points: Geojson with a `FeatureCollection` containing a `Point` feature for every point in the track
           schema:
             type: string
             enum:
               - lines
               - points
+              - valueArray
             default: lines
         - name: wrapLongitudes
           in: query
@@ -436,6 +439,13 @@ paths:
             so that tracks going over the antimeridean line don't reset back to the negated longitudes.
             This should be false if you are using an atlantic-centered visualization, such as QGis, or when
             using leaflet or mapbox to render the track. See https://macwright.org/2016/09/26/the-180th-meridian.html.
+          schema:
+            type: boolean
+            default: false
+        - name: binary
+          in: query
+          description: |
+            When true, the response is encoded in protobuffer, if false, the response is a json
           schema:
             type: boolean
             default: false

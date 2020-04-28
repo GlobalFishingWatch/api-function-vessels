@@ -17,16 +17,17 @@ class TracksRouter {
     };
 
     const { format } = ctx.query;
-    const { features } = ctx.query;
+    const { fields } = ctx.query;
     const { binary } = ctx.query;
 
     log.debug(
-      `Configuring track loader for dataset ${ctx.state.dataset} using additional features ${features}`,
+      `Configuring track loader for dataset ${ctx.state.dataset} using additional fields ${fields}`,
     );
     const trackLoader = trackService({
       dataset: ctx.state.dataset,
-      additionalFeatures: features,
+      additionalFeatures: fields.filter(f => f !== 'lonlat'),
       params,
+      fields,
     });
 
     log.debug(`Looking up track for vessel ${vesselId}`);
@@ -51,7 +52,7 @@ class TracksRouter {
     }
     log.debug(`Returning track for vessel ${vesselId}`);
 
-    await encodeService(ctx, 'geojson', binary)(result);
+    await encodeService(ctx, ctx.query.format, binary)(result);
   }
 }
 

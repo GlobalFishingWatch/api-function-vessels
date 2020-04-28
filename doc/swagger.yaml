@@ -4,7 +4,6 @@ info:
   title: Vessels
   description: |
     The GFW Vessel API allows third parties to request aggregated information about vessels, such as identifiers, characteristics and tracks.
-
     This API requires an API key to use. The key should be included in the `Authorization` header of all requests to the API. Example: `Authorization: Bearer <token>`
 servers:
   - url: https://gateway.api.dev.globalfishingwatch.org
@@ -388,23 +387,23 @@ paths:
         - name: fields
           in: query
           description: |
-            Comma-separated list of additional features to include in the
+            Comma-separated list of additional fields to include in the
             tracks, such as points classified as fishing, per-point speed and
-            courses, etc.
+            courses, etc. lonlat only applies when using format=valueArray, otherwise lat and lon are compulsorily included in GeoJSON responses.
           schema:
             type: array
             items:
               type: string
               enum:
+                - lonlat
+                - timestamp
                 - fishing
                 - speed
                 - course
-                - lonlat
-                - timestamp
         - name: startDate
           in: query
           description: |
-            Temporary filter for the track, will return only the paths of the track
+            Temporal filter for the track, will return only the paths of the track
             which happened after this moment
           schema:
             type: string
@@ -412,7 +411,7 @@ paths:
         - name: endDate
           in: query
           description: |
-            Temporary filter for the track, will return only the paths of the track
+            Temporal filter for the track, will return only the paths of the track
             which happened before this moment
           schema:
             type: string
@@ -421,7 +420,7 @@ paths:
           in: query
           description: |
             Specific encoding format to use for the track. Possible values lines, points or valueArray.
-            valueArray: is a custom array with all the values.
+            valueArray: is a custom compact format, an array with all the fields serialized. The format is further explained in this issue: <a href="https://github.com/GlobalFishingWatch/gfw-eng-tasks/issues/54#issuecomment-620521038">valueArray format</a>.
             lines: Geojson with a single
             `LineString` feature containing all the points in the track
             points: Geojson with a `FeatureCollection` containing a `Point` feature for every point in the track

@@ -3,7 +3,6 @@ const {
   errors: { UnprocessableEntityException },
 } = require('auth-middleware');
 
-const features = ['fishing', 'speed', 'course'];
 const fields = ['fishing', 'speed', 'course', 'lonlat', 'timestamp'];
 
 const schemaTracks = Joi.object({
@@ -12,7 +11,6 @@ const schemaTracks = Joi.object({
     is: Joi.date().iso(),
     then: Joi.date().greater(Joi.ref('startDate')),
   }),
-  features: Joi.string(),
   format: Joi.string()
     .allow('lines', 'points', 'valueArray')
     .default('lines'),
@@ -33,22 +31,6 @@ async function tracksValidation(ctx, next) {
     throw new UnprocessableEntityException('Invalid query', err.details);
   }
 
-  if (ctx.query.features) {
-    const invalid = ctx.query.features
-      .split(',')
-      .some(f => features.indexOf(f) === -1);
-    if (invalid) {
-      throw new UnprocessableEntityException('Invalid query', [
-        {
-          path: ['features'],
-          message: 'Invalid query features',
-        },
-      ]);
-    }
-    ctx.query.features = ctx.query.features.split(',');
-  } else {
-    ctx.query.features = [];
-  }
   if (ctx.query.fields) {
     const invalid = ctx.query.fields
       .split(',')

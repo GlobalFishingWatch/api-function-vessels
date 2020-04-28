@@ -97,7 +97,7 @@ const featureSettings = {
     property: 'course',
     databaseField: 'course',
     formatter: value => value,
-    formatterValueArray: value => value,
+    formatterValueArray: value => toFixedDown(value, 6),
   },
   speed: {
     generateGeoJSONFeatures: () => [],
@@ -105,7 +105,7 @@ const featureSettings = {
     property: 'speed',
     databaseField: 'speed',
     formatter: value => value,
-    formatterValueArray: value => value,
+    formatterValueArray: value => toFixedDown(value, 6),
   },
 };
 
@@ -236,8 +236,8 @@ module.exports = ({ dataset, additionalFeatures = [], params, fields }) => {
             indexSegments.push(index);
           }
           if (fields.indexOf('lonlat') >= 0) {
-            valueArray.push(toFixedDecimal(record.lon, 6));
-            valueArray.push(toFixedDecimal(record.lat, 6));
+            valueArray.push(toFixedDown(record.lon, 6));
+            valueArray.push(toFixedDown(record.lat, 6));
             index += 2;
           }
           features.forEach(f => {

@@ -19,18 +19,18 @@ const extractCoordinates = (records, wrapLongitudes) => {
   if (wrapLongitudes === false) {
     // Hack for renderes like mapbox gl or leaflet to fix antimeridian issues
     // https://macwright.org/2016/09/26/the-180th-meridian.html
-    let currentLng;
-    let lngOffset = 0;
+    let currentLon;
+    let lonOffset = 0;
     return records.map(({ lon, lat }) => {
-      if (currentLng) {
-        if (lon - currentLng < -180) {
-          lngOffset += 360;
-        } else if (lon - currentLng > 180) {
-          lngOffset -= 360;
+      if (currentLon) {
+        if (lon - currentLon < -180) {
+          lonOffset += 360;
+        } else if (lon - currentLon > 180) {
+          lonOffset -= 360;
         }
       }
-      currentLng = lon;
-      return [lon + lngOffset, lat];
+      currentLon = lon;
+      return [lon + lonOffset, lat];
     });
   }
   return records.map(({ lon, lat }) => [lon, lat]);
@@ -229,14 +229,32 @@ module.exports = ({ dataset, additionalFeatures = [], params, fields }) => {
         let numSegments = 0;
         const indexSegments = [];
         let index = 0;
+
+        let currentLon;
+        let lonOffset = 0;
+        
         records.forEach(record => {
           if (segId !== record.seg_id) {
             segId = record.seg_id;
             numSegments += 1;
             indexSegments.push(index);
+            currentLon = 0;
+            lonOffset = 0;
           }
           if (fields.indexOf('lonlat') >= 0) {
-            valueArray.push(toFixedDown(record.lon, 6));
+            if (params.wrapLongitudes === false) {
+              if (currentLon) {
+                if (record.lon - currentLon < -180) {
+                  lonOffset += 360;
+                } else if (record.lon - currentLon > 180) {
+                  lonOffset -= 360;
+                }
+              }  
+              currentLon = record.lon; 
+              valueArray.push(toFixedDown(record.lon + lonOffset, 6));
+            } else {
+              valueArray.push(toFixedDown(record.lon, 6));
+            }
             valueArray.push(toFixedDown(record.lat, 6));
             index += 2;
           }

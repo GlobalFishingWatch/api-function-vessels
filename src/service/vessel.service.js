@@ -11,6 +11,8 @@ const transformSearchResult = source => entry => {
     id: entry._id,
     ...entry._source,
     ...baseFields,
+    firstTransmissionDate: '2019-01-01T00:00:00.000Z',
+    lastTransmissionDate: '2020-01-01T00:00:00.000Z',
   };
 };
 
@@ -19,14 +21,16 @@ const calculateNextOffset = (query, results) =>
     ? query.offset + query.limit
     : null;
 
-const transformSearchResults = ({ query, source }) => results => ({
-  query: query.query,
-  total: results.hits.total,
-  limit: query.limit,
-  offset: query.offset,
-  nextOffset: calculateNextOffset(query, results),
-  entries: results.hits.hits.map(transformSearchResult(source)),
-});
+const transformSearchResults = ({ query, source }) => results => {
+  return {
+    query: query.query,
+    total: results.hits.total,
+    limit: query.limit,
+    offset: query.offset,
+    nextOffset: calculateNextOffset(query, results),
+    entries: results.hits.hits.map(transformSearchResult(source)),
+  };
+};
 
 const transformSuggestionsResults = ({
   results,

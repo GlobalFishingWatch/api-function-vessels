@@ -7,12 +7,14 @@ const transformSearchResult = source => entry => {
     ? { tilesetId: source.tileset }
     : { dataset: source.dataset.name };
 
+  const { firstTimestamp: firstTransmissionDate, lastTimestamp: lastTransmissionDate, ...entrySource } = entry._source;
+
   return {
     id: entry._id,
-    ...entry._source,
+    ...entrySource,
     ...baseFields,
-    firstTransmissionDate: '2019-01-01T00:00:00.000Z',
-    lastTransmissionDate: '2020-01-01T00:00:00.000Z',
+    firstTransmissionDate,
+    lastTransmissionDate,
   };
 };
 

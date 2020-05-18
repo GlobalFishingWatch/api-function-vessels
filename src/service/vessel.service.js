@@ -7,10 +7,14 @@ const transformSearchResult = source => entry => {
     ? { tilesetId: source.tileset }
     : { dataset: source.dataset.name };
 
+  const { firstTimestamp: firstTransmissionDate, lastTimestamp: lastTransmissionDate, ...entrySource } = entry._source;
+
   return {
     id: entry._id,
-    ...entry._source,
+    ...entrySource,
     ...baseFields,
+    firstTransmissionDate,
+    lastTransmissionDate,
   };
 };
 
@@ -19,14 +23,16 @@ const calculateNextOffset = (query, results) =>
     ? query.offset + query.limit
     : null;
 
-const transformSearchResults = ({ query, source }) => results => ({
-  query: query.query,
-  total: results.hits.total,
-  limit: query.limit,
-  offset: query.offset,
-  nextOffset: calculateNextOffset(query, results),
-  entries: results.hits.hits.map(transformSearchResult(source)),
-});
+const transformSearchResults = ({ query, source }) => results => {
+  return {
+    query: query.query,
+    total: results.hits.total,
+    limit: query.limit,
+    offset: query.offset,
+    nextOffset: calculateNextOffset(query, results),
+    entries: results.hits.hits.map(transformSearchResult(source)),
+  };
+};
 
 const transformSuggestionsResults = ({
   results,

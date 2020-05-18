@@ -2,6 +2,8 @@ const groupBy = require('lodash/fp/groupBy');
 const flow = require('lodash/fp/flow');
 const sql = require('../db/sql');
 
+
+
 function toFixedDown(num, digits) {
   if (!num) {
     return 0;
@@ -9,11 +11,7 @@ function toFixedDown(num, digits) {
   return Math.floor(num * 10 ** digits);
 }
 
-function toFixedDecimal(num, digits) {
-  const re = new RegExp(`(\\d+\\.\\d{${digits}})(\\d)`);
-  const m = num.toString().match(re);
-  return m ? parseFloat(m[1]) : num;
-}
+const nullValue = -2147483648;
 
 const extractCoordinates = (records, wrapLongitudes) => {
   if (wrapLongitudes === false) {
@@ -97,7 +95,8 @@ const featureSettings = {
     property: 'course',
     databaseField: 'course',
     formatter: value => value,
-    formatterValueArray: value => toFixedDown(value, 6),
+    formatterValueArray: value =>
+      value !== undefined ? toFixedDown(value, 6) : nullValue,
   },
   speed: {
     generateGeoJSONFeatures: () => [],
@@ -105,7 +104,8 @@ const featureSettings = {
     property: 'speed',
     databaseField: 'speed',
     formatter: value => value,
-    formatterValueArray: value => toFixedDown(value, 6),
+    formatterValueArray: value =>
+      value !== undefined ? toFixedDown(value, 6) : nullValue,
   },
 };
 
@@ -269,7 +269,7 @@ module.exports = ({ dataset, additionalFeatures = [], params, fields }) => {
           return [];
         }
 
-        return [numSegments].concat(indexSegments, valueArray);
+        return [-2147483648, numSegments].concat(indexSegments, valueArray);
       },
     },
   };

@@ -2,22 +2,33 @@ const groupBy = require('lodash/fp/groupBy');
 const flow = require('lodash/fp/flow');
 const sql = require('../db/sql');
 
+
+
+function toFixedDown(num, digits) {
+  if (!num) {
+    return 0;
+  }
+  return Math.floor(num * 10 ** digits);
+}
+
+const nullValue = -2147483648;
+
 const extractCoordinates = (records, wrapLongitudes) => {
   if (wrapLongitudes === false) {
     // Hack for renderes like mapbox gl or leaflet to fix antimeridian issues
     // https://macwright.org/2016/09/26/the-180th-meridian.html
-    let currentLng;
-    let lngOffset = 0;
+    let currentLon;
+    let lonOffset = 0;
     return records.map(({ lon, lat }) => {
-      if (currentLng) {
-        if (lon - currentLng < -180) {
-          lngOffset += 360;
-        } else if (lon - currentLng > 180) {
-          lngOffset -= 360;
+      if (currentLon) {
+        if (lon - currentLon < -180) {
+          lonOffset += 360;
+        } else if (lon - currentLon > 180) {
+          lonOffset -= 360;
         }
       }
-      currentLng = lon;
-      return [lon + lngOffset, lat];
+      currentLon = lon;
+      return [lon + lonOffset, lat];
     });
   }
   return records.map(({ lon, lat }) => [lon, lat]);
@@ -45,6 +56,7 @@ const featureSettings = {
     property: 'timestamp',
     databaseField: 'timestamp',
     formatter: value => new Date(value).getTime(),
+    formatterValueArray: value => Math.floor(new Date(value).getTime() / 1000),
   },
   fishing: {
     generateGeoJSONFeatures: (features, records, params = {}) => {
@@ -75,6 +87,7 @@ const featureSettings = {
     property: 'fishing',
     databaseField: 'score',
     formatter: value => value > 0,
+    formatterValueArray: value => (value > 0 ? 1 : 0),
   },
   course: {
     generateGeoJSONFeatures: () => [],
@@ -82,6 +95,8 @@ const featureSettings = {
     property: 'course',
     databaseField: 'course',
     formatter: value => value,
+    formatterValueArray: value =>
+      value !== undefined ? toFixedDown(value, 6) : nullValue,
   },
   speed: {
     generateGeoJSONFeatures: () => [],
@@ -89,6 +104,8 @@ const featureSettings = {
     property: 'speed',
     databaseField: 'speed',
     formatter: value => value,
+    formatterValueArray: value =>
+      value !== undefined ? toFixedDown(value, 6) : nullValue,
   },
 };
 
@@ -103,8 +120,18 @@ const filtersFromParams = params => [
   ),
 ];
 
-module.exports = ({ dataset, additionalFeatures = [], params }) => {
-  const featureNames = ['times', ...additionalFeatures];
+module.exports = ({ dataset, additionalFeatures = [], params, fields }) => {
+  let featureNames;
+  if (additionalFeatures.indexOf('timestamp') >= 0) {
+    featureNames = additionalFeatures.map(f => {
+      if (f === 'timestamp') {
+        return 'times';
+      }
+      return f;
+    });
+  } else {
+    featureNames = ['times', ...additionalFeatures];
+  }
   const features = featureNames.map(name => featureSettings[name]);
 
   return {
@@ -195,6 +222,54 @@ module.exports = ({ dataset, additionalFeatures = [], params }) => {
           type: 'FeatureCollection',
           features: geoJSONFeatures,
         };
+      },
+      valueArray(records) {
+        let segId = null;
+        const valueArray = [];
+        let numSegments = 0;
+        const indexSegments = [];
+        let index = 0;
+
+        let currentLon;
+        let lonOffset = 0;
+        
+        records.forEach(record => {
+          if (segId !== record.seg_id) {
+            segId = record.seg_id;
+            numSegments += 1;
+            indexSegments.push(index);
+            currentLon = 0;
+            lonOffset = 0;
+          }
+          if (fields.indexOf('lonlat') >= 0) {
+            if (params.wrapLongitudes === false) {
+              if (currentLon) {
+                if (record.lon - currentLon < -180) {
+                  lonOffset += 360;
+                } else if (record.lon - currentLon > 180) {
+                  lonOffset -= 360;
+                }
+              }  
+              currentLon = record.lon; 
+              valueArray.push(toFixedDown(record.lon + lonOffset, 6));
+            } else {
+              valueArray.push(toFixedDown(record.lon, 6));
+            }
+            valueArray.push(toFixedDown(record.lat, 6));
+            index += 2;
+          }
+          features.forEach(f => {
+            if (fields.indexOf(f.property) >= 0) {
+              valueArray.push(f.formatterValueArray(record[f.databaseField]));
+              index += 1;
+            }
+          });
+        });
+        if (numSegments === 0) {
+          return [];
+        }
+
+        return [-2147483648, numSegments].concat(indexSegments, valueArray);
       },
     },
   };

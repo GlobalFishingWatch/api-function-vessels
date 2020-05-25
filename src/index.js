@@ -7,7 +7,6 @@ const { koa } = require('auth-middleware');
 const HelmetMiddleware = require('./middleware/helmet.middleware');
 const logMiddleware = require('./middleware/log.middleware');
 const errors = require('./middleware/errors.middleware');
-const { redis } = require('./middleware/caching.middleware');
 
 const cacheRouter = require('./route/cache.route');
 const datasetRouter = require('./route/dataset.route');

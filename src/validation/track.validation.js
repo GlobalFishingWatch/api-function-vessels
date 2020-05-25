@@ -3,7 +3,7 @@ const {
   errors: { UnprocessableEntityException },
 } = require('auth-middleware');
 
-const features = ['fishing', 'speed', 'course'];
+const fields = ['fishing', 'speed', 'course', 'lonlat', 'timestamp'];
 
 const schemaTracks = Joi.object({
   startDate: Joi.date().iso(),
@@ -11,36 +11,43 @@ const schemaTracks = Joi.object({
     is: Joi.date().iso(),
     then: Joi.date().greater(Joi.ref('startDate')),
   }),
-  features: Joi.string(),
   format: Joi.string()
-    .allow('lines', 'points')
+    .allow('lines', 'points', 'valueArray')
     .default('lines'),
   query: Joi.boolean().default(false),
   binary: Joi.boolean().default(false),
+  fields: Joi.string(),
   wrapLongitudes: Joi.boolean().default(false),
 });
 
 async function tracksValidation(ctx, next) {
+  let value;
   try {
-    const value = await schemaTracks.validateAsync(ctx.request.query);
-
+    value = await schemaTracks.validateAsync(ctx.request.query);
     Object.keys(value).forEach(k => {
       ctx.query[k] = value[k];
     });
-    if (ctx.query.features) {
-      const invalid = ctx.query.features
-        .split(',')
-        .some(f => features.indexOf(f) === -1);
-      if (invalid) {
-        throw new UnprocessableEntityException('Invalid query', []);
-      }
-      ctx.query.features = ctx.query.features.split(',');
-    } else {
-      ctx.query.features = [];
-    }
   } catch (err) {
     throw new UnprocessableEntityException('Invalid query', err.details);
   }
+
+  if (ctx.query.fields) {
+    const invalid = ctx.query.fields
+      .split(',')
+      .some(f => fields.indexOf(f) === -1);
+    if (invalid) {
+      throw new UnprocessableEntityException('Invalid query', [
+        {
+          path: ['fields'],
+          message: 'Invalid query fields',
+        },
+      ]);
+    }
+    ctx.query.fields = ctx.query.fields.split(',');
+  } else {
+    ctx.query.fields = [];
+  }
+
   await next();
 }
 

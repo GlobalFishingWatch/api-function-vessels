@@ -7,15 +7,21 @@ let proto = null;
 module.exports = (ctx, type, binary = false) => {
   return async data => {
     if (binary) {
-      if (type === 'geojson') {
+      if (!proto) {
+        proto = await protobuf.load(`${__dirname}/../proto/vessels.proto`);
+      }
+      if (type === 'lines' || type === 'points') {
         const pbf = geobuf.encode(data, new Pbf());
         const buffer = Buffer.from(pbf);
         ctx.set('content-type', 'application/protobuf');
         ctx.body = buffer;
+      } else if (type === 'valueArray') {
+        ctx.set('content-type', 'application/protobuf');
+
+        const protoType = proto.lookupType(`vessels.Track`);
+        ctx.type = 'application/protobuf';
+        ctx.body = protoType.encode(protoType.create({ data })).finish();
       } else {
-        if (!proto) {
-          proto = await protobuf.load(`${__dirname}/../proto/vessels.proto`);
-        }
         const protoType = proto.lookupType(`vessels.${type}`);
 
         ctx.type = 'application/protobuf';

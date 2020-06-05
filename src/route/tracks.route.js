@@ -7,6 +7,19 @@ const { tracksValidation } = require('../validation/track.validation');
 const encodeService = require('../service/encode.service');
 const { redis } = require('../middleware/caching.middleware');
 
+const thinning = require('../service/thinning.service');
+
+const THINNING_PARAMS = {
+  distanceFishing: 0.03,
+  bearingValFishing: 5,
+  minAccuracyFishing: 15,
+  changeSpeedFishing: 50,
+  distanceTransit: 0.06,
+  bearingValTransit: 5,
+  minAccuracyTransit: 30,
+  changeSpeedTransit: 50,
+};
+
 class TracksRouter {
   static async getTracks(ctx) {
     const { vesselId } = ctx.params;
@@ -31,7 +44,16 @@ class TracksRouter {
     });
 
     log.debug(`Looking up track for vessel ${vesselId}`);
-    const records = await trackLoader.load(vesselId);
+    let records = null;
+    if (!ctx.state.dataset) {
+      records = await trackLoader.loadFishing(vesselId);
+      if (!ctx.state.user) {
+        log.debug('Thinning tracks');
+        records = thinning(records, THINNING_PARAMS);
+      }
+    } else {
+      records = await trackLoader.load(vesselId);
+    }
 
     log.debug(`Converting the records to format ${format}`);
     const result = trackLoader.formatters[format](records);
@@ -60,7 +82,11 @@ const router = new Router({
   prefix: '/datasets',
 });
 router.use(koa.obtainUser(false));
-
+router.get(
+  '/fishing/vessels/:vesselId/tracks',
+  tracksValidation,
+  TracksRouter.getTracks,
+);
 router.get(
   '/:dataset/vessels/:vesselId/tracks',
   koa.checkPermissionsWithRequestParams([

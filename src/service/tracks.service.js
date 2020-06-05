@@ -1,8 +1,7 @@
 const groupBy = require('lodash/fp/groupBy');
 const flow = require('lodash/fp/flow');
 const sql = require('../db/sql');
-
-
+const sqlFishing = require('../db/sql-fishing');
 
 function toFixedDown(num, digits) {
   if (!num) {
@@ -152,7 +151,57 @@ module.exports = ({ dataset, additionalFeatures = [], params, fields }) => {
 
       return flow(...filtersFromParams(params))(baseQuery);
     },
+    loadFishing(vesselId) {
+      const additionalSelectFields = features.map(
+        feature => feature.databaseField,
+      );
+      let startDate = new Date('2019-01-01T00:00:00.000Z');
+      let endDate = new Date('2019-08-31T23:59:59.000Z');
+      if (params.startDate && params.startDate > startDate) {
+        startDate = params.startDate;
+      }
+      if (params.endDate && params.endDate < endDate) {
+        endDate = params.endDate;
+      }
+      let baseQuery = null;
+      const unions = [];
+      for (let i = startDate.getMonth(); i <= endDate.getMonth(); i++) {
+        const q = sqlFishing
+          .select(
+            'seg_id',
+            sqlFishing.raw('lon'),
+            sqlFishing.raw('lat'),
+            ...additionalSelectFields,
+          )
+          .from(`fishing_${i + 1}_19`)
+          .where('vessel_id', vesselId);
 
+        if (!baseQuery) {
+          q.where('timestamp', '>', startDate);
+          baseQuery = q;
+        } else {
+          unions.push(q);
+        }
+      }
+      if (unions.length > 0) {
+        unions[unions.length - 1].where('timestamp', '<', endDate);
+        baseQuery = baseQuery.union(unions);
+      } else {
+        baseQuery = baseQuery.where('timestamp', '<', endDate);
+      }
+      const q = sqlFishing
+        .with('total', baseQuery)
+        .select(
+          'seg_id',
+          sqlFishing.raw('lon'),
+          sqlFishing.raw('lat'),
+          ...additionalSelectFields,
+        )
+        .from('total')
+        .orderBy(['seg_id', 'timestamp']);
+      console.log('Query', q.toString());
+      return q;
+    },
     formatters: {
       lines(records) {
         const segments = groupBy(record => record.seg_id)(records);
@@ -232,7 +281,7 @@ module.exports = ({ dataset, additionalFeatures = [], params, fields }) => {
 
         let currentLon;
         let lonOffset = 0;
-        
+
         records.forEach(record => {
           if (segId !== record.seg_id) {
             segId = record.seg_id;
@@ -249,8 +298,8 @@ module.exports = ({ dataset, additionalFeatures = [], params, fields }) => {
                 } else if (record.lon - currentLon > 180) {
                   lonOffset -= 360;
                 }
-              }  
-              currentLon = record.lon; 
+              }
+              currentLon = record.lon;
               valueArray.push(toFixedDown(record.lon + lonOffset, 6));
             } else {
               valueArray.push(toFixedDown(record.lon, 6));

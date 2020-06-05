@@ -17,6 +17,7 @@
   },
   "rules": {
     "arrow-parens": "off",
+    "no-continue": "off",
     "no-plusplus": ["error", {
       "allowForLoopAfterthoughts": true
     }]

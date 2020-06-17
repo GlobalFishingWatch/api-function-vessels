@@ -11,11 +11,11 @@ const thinning = require('../service/thinning.service');
 
 const THINNING_PARAMS = {
   distanceFishing: 2,
-  bearingValFishing: 10,
+  bearingValFishing: 90,
   minAccuracyFishing: 90,
   changeSpeedFishing: 80,
   distanceTransit: 4,
-  bearingValTransit: 20,
+  bearingValTransit: 120,
   minAccuracyTransit: 150,
   changeSpeedTransit: 80,
 };

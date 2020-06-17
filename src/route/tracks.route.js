@@ -10,13 +10,13 @@ const { redis } = require('../middleware/caching.middleware');
 const thinning = require('../service/thinning.service');
 
 const THINNING_PARAMS = {
-  distanceFishing: 0.06,
+  distanceFishing: 0.1,
   bearingValFishing: 5,
-  minAccuracyFishing: 25,
+  minAccuracyFishing: 50,
   changeSpeedFishing: 80,
-  distanceTransit: 0.12,
+  distanceTransit: 0.24,
   bearingValTransit: 10,
-  minAccuracyTransit: 60,
+  minAccuracyTransit: 90,
   changeSpeedTransit: 80,
 };
 

@@ -199,7 +199,7 @@ module.exports = ({ dataset, additionalFeatures = [], params, fields }) => {
         )
         .from('total')
         .orderBy(['seg_id', 'timestamp']);
-      console.log('Query', q.toString());
+
       return q;
     },
     formatters: {

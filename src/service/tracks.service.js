@@ -155,7 +155,7 @@ module.exports = ({ dataset, additionalFeatures = [], params, fields }) => {
       const additionalSelectFields = features.map(
         feature => feature.databaseField,
       );
-      let startDate = new Date('2019-01-01T00:00:00.000Z');
+      let startDate = new Date('2012-01-01T00:00:00.000Z');
       let endDate = new Date('2019-12-31T23:59:59.000Z');
       if (params.startDate && params.startDate > startDate) {
         startDate = params.startDate;
@@ -165,7 +165,8 @@ module.exports = ({ dataset, additionalFeatures = [], params, fields }) => {
       }
       let baseQuery = null;
       const unions = [];
-      for (let i = startDate.getMonth(); i <= endDate.getMonth(); i++) {
+      const date = new Date(startDate.getTime());
+      while (date < endDate) {
         const q = sqlFishing
           .select(
             'seg_id',
@@ -173,7 +174,13 @@ module.exports = ({ dataset, additionalFeatures = [], params, fields }) => {
             sqlFishing.raw('lat'),
             ...additionalSelectFields,
           )
-          .from(`fishing_${i + 1}_19`)
+          .from(
+            `fishing_${
+              date.getMonth() + 1 < 10
+                ? `0${date.getMonth() + 1}`
+                : date.getMonth() + 1
+            }_${date.getFullYear()}`,
+          )
           .where('vessel_id', vesselId);
 
         if (!baseQuery) {
@@ -182,6 +189,7 @@ module.exports = ({ dataset, additionalFeatures = [], params, fields }) => {
         } else {
           unions.push(q);
         }
+        date.setMonth(date.getMonth() + 1);
       }
       if (unions.length > 0) {
         unions[unions.length - 1].where('timestamp', '<', endDate);

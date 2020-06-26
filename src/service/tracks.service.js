@@ -120,8 +120,7 @@ const featureSettings = {
     property: 'speed',
     databaseField: 'speed',
     formatter: value => value,
-    formatterValueArray: value =>
-      value !== undefined ? toFixedDown(value, 6) : nullValue,
+    formatterValueArray: value => (value !== undefined ? value : nullValue),
   },
 };
 

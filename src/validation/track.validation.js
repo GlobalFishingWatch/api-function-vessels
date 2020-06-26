@@ -3,7 +3,15 @@ const {
   errors: { UnprocessableEntityException },
 } = require('auth-middleware');
 
-const fields = ['fishing', 'speed', 'course', 'lonlat', 'timestamp'];
+const fields = [
+  'fishing',
+  'speed',
+  'course',
+  'lonlat',
+  'timestamp',
+  'night',
+  'elevation',
+];
 
 const schemaTracks = Joi.object({
   startDate: Joi.date().iso(),

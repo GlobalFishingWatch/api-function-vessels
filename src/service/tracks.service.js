@@ -97,6 +97,23 @@ const featureSettings = {
     formatterValueArray: value =>
       value !== undefined ? toFixedDown(value, 6) : nullValue,
   },
+  elevation: {
+    generateGeoJSONFeatures: () => [],
+    coordinateProperty: 'elevations',
+    property: 'elevation',
+    databaseField: 'elevation_m',
+    formatter: value => value,
+    formatterValueArray: value =>
+      value !== undefined ? toFixedDown(value, 6) : nullValue,
+  },
+  night: {
+    generateGeoJSONFeatures: () => [],
+    coordinateProperty: 'nights',
+    property: 'night',
+    databaseField: 'night',
+    formatter: value => value,
+    formatterValueArray: value => (value ? 1 : 0),
+  },
   speed: {
     generateGeoJSONFeatures: () => [],
     coordinateProperty: 'speeds',

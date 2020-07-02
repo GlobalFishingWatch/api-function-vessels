@@ -45,6 +45,14 @@ module.exports = greenpeace.sanitizeEnvironment(environments, {
       required: false,
     }),
   },
+  server: {
+    port: greenpeace.entry({
+      key: 'PORT',
+      doc: 'Port on which the server is exposed to clients.',
+      defaults: { development: 8080 },
+      required: true,
+    }),
+  },
   elasticsearch: {
     server: greenpeace.entry({
       key: 'ELASTICSEARCH_SERVER',

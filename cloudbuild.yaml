@@ -1,21 +1,43 @@
 steps:
-  - name: gcr.io/cloud-builders/npm
-    args: ["install"]
-  - name: gcr.io/cloud-builders/gcloud
+  # Push production image to GCR
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "--target",
+        "production",
+        "-t",
+        "gcr.io/world-fishing-827/github.com/globalfishingwatch/api-vessels:$COMMIT_SHA",
+        ".",
+      ]
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "push",
+        "gcr.io/world-fishing-827/github.com/globalfishingwatch/api-vessels:$COMMIT_SHA",
+      ]
+
+  # Deploy to the appropriate environment
+  - name: "gcr.io/cloud-builders/gcloud"
     args:
       [
         "beta",
-        "functions",
+        "run",
         "deploy",
-        "${_FUNCTION_NAME}",
-        "--project=${_PROJECT_NAME}",
-        "--region=${_REGION}",
-        "--runtime=nodejs10",
-        "--allow-unauthenticated",
-        "--trigger-http",
-        "--entry-point=entrypoint",
-        "--memory=512MB",
-        "--vpc-connector=${_VPC_CONNECTOR}",
+        "$_RUN_SERVICE_NAME",
+        "--project",
+        "$_RUN_PROJECT",
+        "--image",
+        "gcr.io/world-fishing-827/github.com/globalfishingwatch/api-vessels:$COMMIT_SHA",
+        "--region",
+        "$_RUN_REGION",
+        "--vpc-connector",
+        "${_VPC_CONNECTOR}",
+        "--platform",
+        "managed",
         "--set-env-vars",
         "LOG_LEVEL=${_LOG_LEVEL},NODE_ENV=${_NODE_ENV},GCLOUD_DATASTORE_PROJECTID=${_GCLOUD_DATASTORE_PROJECTID},GCLOUD_DATASTORE_NAMESPACE=${_GCLOUD_DATASTORE_NAMESPACE},PLATFORM_SETTINGS_SERVER=${_PLATFORM_SETTINGS_SERVER},GCLOUD_SQL_USER=${_GCLOUD_SQL_USER},GCLOUD_SQL_PASSWORD=${_GCLOUD_SQL_PASSWORD},GCLOUD_SQL_DB=${_GCLOUD_SQL_DB},GCLOUD_SQL_INSTANCE=${_GCLOUD_SQL_INSTANCE},ELASTICSEARCH_SERVER=${_ELASTICSEARCH_SERVER},REDIS_HOST=${_REDIS_HOST},REDIS_PORT=${_REDIS_PORT},REDIS_ENABLED=${_REDIS_ENABLED},AUTH_USERNAME=${_AUTH_USERNAME},AUTH_PASSWORD=${_AUTH_PASSWORD},GFW_APP_TOKEN=${_GFW_APP_TOKEN},GCLOUD_SQLFISHING_USER=${_GCLOUD_SQLFISHING_USER},GCLOUD_SQLFISHING_PASSWORD=${_GCLOUD_SQLFISHING_PASSWORD},GCLOUD_SQLFISHING_DB=${_GCLOUD_SQLFISHING_DB},GCLOUD_SQLFISHING_INSTANCE=${_GCLOUD_SQLFISHING_INSTANCE}",
       ]
+
+images:
+  - "gcr.io/world-fishing-827/github.com/globalfishingwatch/api-vessels:$COMMIT_SHA"

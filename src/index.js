@@ -3,7 +3,8 @@ const Body = require('koa-body');
 const Logger = require('koa-logger');
 const Cors = require('@koa/cors');
 const { koa } = require('auth-middleware');
-
+const config = require('./config');
+const log = require('./log');
 const HelmetMiddleware = require('./middleware/helmet.middleware');
 const logMiddleware = require('./middleware/log.middleware');
 const errors = require('./middleware/errors.middleware');
@@ -30,4 +31,5 @@ app.use(datasetRouter.routes()).use(datasetRouter.allowedMethods());
 app.use(tilesetRouter.routes()).use(tilesetRouter.allowedMethods());
 app.use(tracksRouter.routes()).use(tracksRouter.allowedMethods());
 
-exports.entrypoint = app.callback();
+app.listen(config.server.port);
+log.debug(`Server up and listening on port ${config.server.port}`);

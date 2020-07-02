@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "watch": "npm-watch start",
-    "start": "functions-framework --target=entrypoint"
+    "start": "node  --max-http-header-size 20000 src/index.js"
   },
   "watch": {
     "start": "*.js"

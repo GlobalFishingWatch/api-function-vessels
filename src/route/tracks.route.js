@@ -14,6 +14,10 @@ const THINNING_PARAMS = {
   bearingValFishing: 90,
   minAccuracyFishing: 90,
   changeSpeedFishing: 80,
+  distanceEncounter: 2,
+  bearingValEncounter: 90,
+  minAccuracyEncounter: 90,
+  changeSpeedEncounter: 80,
   distanceTransit: 4,
   bearingValTransit: 120,
   minAccuracyTransit: 150,
@@ -46,7 +50,11 @@ class TracksRouter {
     log.debug(`Looking up track for vessel ${vesselId}`);
     let records = null;
     if (!ctx.state.dataset) {
-      records = await trackLoader.loadFishing(vesselId);
+      if (ctx.request.url.indexOf('carriers') >= 0) {
+        records = await trackLoader.loadCarriers(vesselId);
+      } else {
+        records = await trackLoader.loadFishing(vesselId);
+      }
       if (!ctx.state.user) {
         log.debug('Thinning tracks');
         records = thinning(records, THINNING_PARAMS);
@@ -84,6 +92,11 @@ const router = new Router({
 router.use(koa.obtainUser(false));
 router.get(
   '/fishing/vessels/:vesselId/tracks',
+  tracksValidation,
+  TracksRouter.getTracks,
+);
+router.get(
+  '/carriers/vessels/:vesselId/tracks',
   tracksValidation,
   TracksRouter.getTracks,
 );

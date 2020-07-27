@@ -7,6 +7,10 @@ function thinning(
     bearingValFishing,
     minAccuracyFishing,
     changeSpeedFishing,
+    distanceEncounter,
+    bearingValEncounter,
+    minAccuracyEncounter,
+    changeSpeedEncounter,
     distanceTransit,
     bearingValTransit,
     minAccuracyTransit,
@@ -25,7 +29,10 @@ function thinning(
     }
     const actual = records[i];
     previous = results[results.length - 1];
-    if (actual.fishing !== previous.fishing) {
+    if (
+      actual.fishing !== previous.fishing ||
+      actual.encounter !== previous.encounter
+    ) {
       results.push(actual);
       continue;
     }
@@ -35,7 +42,8 @@ function thinning(
       60000;
     if (
       (actual.fishing && diff > minAccuracyFishing) ||
-      (!actual.fishing && diff > minAccuracyTransit)
+      (actual.encounter && diff > minAccuracyEncounter) ||
+      (!actual.fishing && !actual.encounter && diff > minAccuracyTransit)
     ) {
       results.push(actual);
       continue;
@@ -48,7 +56,9 @@ function thinning(
       actual.distance = distance(previousPoint, actualPoint);
     }
     if (
-      (changeSpeedFishing !== undefined || changeSpeedTransit !== undefined) &&
+      (changeSpeedFishing !== undefined ||
+        changeSpeedTransit !== undefined ||
+        changeSpeedEncounter !== undefined) &&
       i < records.length - 1
     ) {
       if (
@@ -56,8 +66,14 @@ function thinning(
           previous.fishing &&
           Math.abs((actual.speed / previous.speed) * 100 - 100) >
             changeSpeedFishing) ||
+        (actual.encounter &&
+          previous.encounter &&
+          Math.abs((actual.speed / previous.speed) * 100 - 100) >
+            changeSpeedEncounter) ||
         (!actual.fishing &&
+          !actual.encounter &&
           !previous.fishing &&
+          !previous.encounter &&
           Math.abs((actual.speed / previous.speed) * 100 - 100) >
             changeSpeedTransit)
       ) {
@@ -71,8 +87,13 @@ function thinning(
       (actual.fishing &&
         previous.fishing &&
         Math.abs(actual.distance) < distanceFishing) ||
+      (actual.encounter &&
+        previous.encounter &&
+        Math.abs(actual.distance) < distanceEncounter) ||
       (!actual.fishing &&
         !previous.fishing &&
+        !actual.encounter &&
+        !previous.encounter &&
         Math.abs(actual.distance) < distanceTransit)
     ) {
       if (actual.fishing) {
@@ -82,7 +103,9 @@ function thinning(
     }
 
     if (
-      (bearingValFishing !== undefined || bearingValTransit !== undefined) &&
+      (bearingValFishing !== undefined ||
+        bearingValTransit !== undefined ||
+        bearingValEncounter !== undefined) &&
       i < records.length - 1
     ) {
       const actualPoint = point([actual.lon, actual.lat]);
@@ -93,9 +116,16 @@ function thinning(
           previous.fishing &&
           records[i + 1].fishing &&
           Math.abs(nextBearing - actual.bearing) < bearingValFishing) ||
+        (actual.encounter &&
+          previous.encounter &&
+          records[i + 1].encounter &&
+          Math.abs(nextBearing - actual.bearing) < bearingValEncounter) ||
         (!actual.fishing &&
           !previous.fishing &&
           !records[i + 1].fishing &&
+          !actual.encounter &&
+          !previous.encounter &&
+          !records[i + 1].encounter &&
           Math.abs(nextBearing - actual.bearing) < bearingValTransit)
       ) {
         if (actual.fishing) {

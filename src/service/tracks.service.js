@@ -172,8 +172,8 @@ module.exports = ({ dataset, additionalFeatures = [], params, fields }) => {
       const additionalSelectFields = features.map(
         feature => feature.databaseField,
       );
-      let startDate = new Date('2015-01-01T00:00:00.000Z');
-      let endDate = new Date('2015-12-31T23:59:59.000Z');
+      let startDate = new Date('2017-01-01T00:00:00.000Z');
+      let endDate = new Date('2017-12-31T23:59:59.000Z');
       if (params.startDate && params.startDate > startDate) {
         startDate = params.startDate;
       }

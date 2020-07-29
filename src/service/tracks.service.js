@@ -234,49 +234,18 @@ module.exports = ({ dataset, additionalFeatures = [], params, fields }) => {
       if (params.endDate && params.endDate < endDate) {
         endDate = params.endDate;
       }
-      let baseQuery = null;
-      const unions = [];
-      const date = new Date(startDate.getTime());
-      while (date < endDate) {
-        const q = sqlFishing
-          .select(
-            'seg_id',
-            sqlFishing.raw('lon'),
-            sqlFishing.raw('lat'),
-            ...additionalSelectFields,
-          )
-          .from(
-            `fishing_${
-              date.getMonth() + 1 < 10
-                ? `0${date.getMonth() + 1}`
-                : date.getMonth() + 1
-            }_${date.getFullYear()}`,
-          )
-          .where('vessel_id', vesselId);
 
-        if (!baseQuery) {
-          q.where('timestamp', '>', startDate);
-          baseQuery = q;
-        } else {
-          unions.push(q);
-        }
-        date.setMonth(date.getMonth() + 1);
-      }
-      if (unions.length > 0) {
-        unions[unions.length - 1].where('timestamp', '<', endDate);
-        baseQuery = baseQuery.union(unions);
-      } else {
-        baseQuery = baseQuery.where('timestamp', '<', endDate);
-      }
       const q = sqlFishing
-        .with('total', baseQuery)
         .select(
           'seg_id',
           sqlFishing.raw('lon'),
           sqlFishing.raw('lat'),
           ...additionalSelectFields,
         )
-        .from('total')
+        .from(`fishing`)
+        .where('vessel_id', vesselId)
+        .where('timestamp', '>=', startDate)
+        .where('timestamp', '=<', endDate)
         .orderBy(['seg_id', 'timestamp']);
 
       return q;

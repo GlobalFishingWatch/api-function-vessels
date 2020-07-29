@@ -245,7 +245,7 @@ module.exports = ({ dataset, additionalFeatures = [], params, fields }) => {
         .from(`fishing`)
         .where('vessel_id', vesselId)
         .where('timestamp', '>=', startDate)
-        .where('timestamp', '=<', endDate)
+        .where('timestamp', '<=', endDate)
         .orderBy(['seg_id', 'timestamp']);
 
       return q;

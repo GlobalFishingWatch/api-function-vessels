@@ -58,35 +58,20 @@ const featureSettings = {
     formatterValueArray: value => Math.floor(new Date(value).getTime() / 1000),
   },
   fishing: {
-    generateGeoJSONFeatures: (features, records, params = {}) => {
-      const fishingRecords = records.filter(record => record.score > 0);
-      const coordinates = extractCoordinates(
-        fishingRecords,
-        params.wrapLongitudes,
-      );
-      const coordinateProperties = extractCoordinateProperties(
-        features,
-        fishingRecords,
-      );
-
-      return [
-        {
-          type: 'Feature',
-          properties: {
-            type: 'fishing',
-            coordinateProperties,
-          },
-          geometry: {
-            type: 'MultiPoint',
-            coordinates,
-          },
-        },
-      ];
-    },
+    generateGeoJSONFeatures: () => [],
     property: 'fishing',
+    coordinateProperty: 'fishing',
     databaseField: 'fishing',
-    formatter: value => value > 0,
-    formatterValueArray: value => (value > 0 ? 1 : 0),
+    formatter: value => value,
+    formatterValueArray: value => (value ? 1 : 0),
+  },
+  encounter: {
+    generateGeoJSONFeatures: () => [],
+    coordinateProperty: 'encounters',
+    property: 'encounter',
+    databaseField: 'encounter',
+    formatter: value => value,
+    formatterValueArray: value => (value ? 1 : 0),
   },
   course: {
     generateGeoJSONFeatures: () => [],

@@ -11,6 +11,7 @@ const fields = [
   'timestamp',
   'night',
   'elevation',
+  'encounter',
 ];
 
 const schemaTracks = Joi.object({

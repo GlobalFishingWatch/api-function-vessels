@@ -136,7 +136,13 @@ const filtersFromParams = params => [
   ),
 ];
 
-module.exports = ({ dataset, additionalFeatures = [], params, fields }) => {
+module.exports = ({
+  dataset,
+  additionalFeatures = [],
+  params,
+  fields,
+  version = 'v0',
+}) => {
   let featureNames;
   if (additionalFeatures.indexOf('timestamp') >= 0) {
     featureNames = additionalFeatures.map(f => {
@@ -162,7 +168,9 @@ module.exports = ({ dataset, additionalFeatures = [], params, fields }) => {
           sql.raw('ST_Y("position"::geometry) AS "lat"'),
           ...additionalSelectFields,
         )
-        .from(dataset.tracksTable)
+        .from(
+          version === 'v1' ? dataset.configuration.table : dataset.tracksTable,
+        )
         .where('vessel_id', vesselId)
         .orderBy(['seg_id', 'timestamp']);
 

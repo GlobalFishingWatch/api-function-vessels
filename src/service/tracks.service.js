@@ -84,7 +84,7 @@ const featureSettings = {
       ];
     },
     property: 'fishing',
-    databaseField: 'score',
+    databaseField: 'fishing',
     formatter: value => value > 0,
     formatterValueArray: value => (value > 0 ? 1 : 0),
   },

@@ -3,7 +3,7 @@ const {
   koa,
   errors: { NotFoundException },
 } = require('auth-middleware');
-
+const checkDatasetTypeMiddleware = require('../middleware/check-type-dataset.middleware');
 const vesselService = require('../service/vessel.service');
 const loadDatasetMiddleware = require('../middleware/load-dataset.middleware');
 const log = require('../log');
@@ -74,6 +74,7 @@ router.get(
   redis([]),
   datasetValidation,
   loadDatasetMiddleware('v1'),
+  checkDatasetTypeMiddleware('carriers-vessels'),
   DatasetRouter.getAllVessels,
 );
 
@@ -85,6 +86,7 @@ router.get(
   redis([]),
   datasetOfVesselIdValidation,
   loadDatasetMiddleware('v1'),
+  checkDatasetTypeMiddleware('carriers-vessels'),
   DatasetRouter.getVesselById,
 );
 

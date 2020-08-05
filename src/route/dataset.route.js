@@ -71,7 +71,7 @@ router.get(
   ]),
   redis([]),
   datasetValidation,
-  loadDatasetMiddleware,
+  loadDatasetMiddleware(),
   DatasetRouter.getAllVessels,
 );
 
@@ -82,7 +82,7 @@ router.get(
   ]),
   redis([]),
   datasetOfVesselIdValidation,
-  loadDatasetMiddleware,
+  loadDatasetMiddleware(),
   DatasetRouter.getVesselById,
 );
 

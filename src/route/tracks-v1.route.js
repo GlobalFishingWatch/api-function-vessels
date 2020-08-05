@@ -1,6 +1,7 @@
 const Router = require('koa-router');
 const { koa } = require('auth-middleware');
 const loadDatasetMiddleware = require('../middleware/load-dataset.middleware');
+const checkDatasetTypeMiddleware = require('../middleware/check-type-dataset.middleware');
 const trackService = require('../service/tracks.service');
 const log = require('../log');
 const { tracksValidation } = require('../validation/track.validation');
@@ -71,6 +72,7 @@ router.get(
   redis([]),
   tracksValidation,
   loadDatasetMiddleware('v1'),
+  checkDatasetTypeMiddleware('carriers-tracks'),
   TracksRouter.getTracks,
 );
 

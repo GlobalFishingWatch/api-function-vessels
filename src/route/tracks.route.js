@@ -107,7 +107,7 @@ router.get(
   ]),
   redis([]),
   tracksValidation,
-  loadDatasetMiddleware,
+  loadDatasetMiddleware(),
   TracksRouter.getTracks,
 );
 

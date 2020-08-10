@@ -3,7 +3,7 @@ const {
   koa,
   errors: { NotFoundException },
 } = require('auth-middleware');
-
+const checkDatasetTypeMiddleware = require('../middleware/check-type-dataset.middleware');
 const vesselService = require('../service/vessel.service');
 const loadDatasetMiddleware = require('../middleware/load-dataset.middleware');
 const log = require('../log');
@@ -26,6 +26,7 @@ class DatasetRouter {
     log.debug('Querying vessels search index');
     const results = await vesselService({
       dataset: ctx.state.dataset,
+      version: ctx.state.datasetVersion,
     }).search(query);
 
     log.debug(`Returning ${results.entries.length} / ${results.total} results`);
@@ -38,9 +39,10 @@ class DatasetRouter {
     try {
       const { vesselId } = ctx.params;
       log.debug(`Looking up vessel information for vessel ${vesselId}`);
-      const result = await vesselService({ dataset: ctx.state.dataset }).get(
-        vesselId,
-      );
+      const result = await vesselService({
+        dataset: ctx.state.dataset,
+        version: ctx.state.datasetVersion,
+      }).get(vesselId);
 
       log.debug('Returning vessel information');
       ctx.state.cacheTags = [
@@ -60,7 +62,7 @@ class DatasetRouter {
 }
 
 const router = new Router({
-  prefix: '/datasets',
+  prefix: '/v1/datasets',
 });
 router.use(koa.obtainUser(false));
 
@@ -71,7 +73,8 @@ router.get(
   ]),
   redis([]),
   datasetValidation,
-  loadDatasetMiddleware(),
+  loadDatasetMiddleware('v1'),
+  checkDatasetTypeMiddleware('carriers-vessels'),
   DatasetRouter.getAllVessels,
 );
 
@@ -82,7 +85,8 @@ router.get(
   ]),
   redis([]),
   datasetOfVesselIdValidation,
-  loadDatasetMiddleware(),
+  loadDatasetMiddleware('v1'),
+  checkDatasetTypeMiddleware('carriers-vessels'),
   DatasetRouter.getVesselById,
 );
 

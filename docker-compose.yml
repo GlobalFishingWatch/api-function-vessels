@@ -1,4 +1,4 @@
-version: "2.4"
+version: '2.4'
 services:
   dev:
     build:
@@ -7,20 +7,20 @@ services:
     env_file: ./dev/env
     command: npm run watch
     volumes:
-      - "./src:/opt/project/src"
-      - "cloudsql-sockets:/cloudsql"
-      - "~/.config/gcloud:/root/.config/gcloud"
+      - './src:/opt/project/src'
+      - 'cloudsql-sockets:/cloudsql'
+      - '~/.config/gcloud:/root/.config/gcloud'
     ports:
-      - "8080:8080"
+      - '8080:8080'
     environment:
       - NODE_ENV=development
 
   cloudsql:
     image: gcr.io/cloudsql-docker/gce-proxy:1.12
-    command: "/cloud_sql_proxy -instances=world-fishing-827:us-central1:tracks-production -dir=/cloudsql"
+    command: '/cloud_sql_proxy -instances=world-fishing-827:us-central1:api -dir=/cloudsql'
     volumes:
-      - "~/.config/gcloud:/root/.config/gcloud"
-      - "cloudsql-sockets:/cloudsql"
+      - '~/.config/gcloud:/root/.config/gcloud'
+      - 'cloudsql-sockets:/cloudsql'
   redis:
     image: redis
 

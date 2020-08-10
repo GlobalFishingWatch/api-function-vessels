@@ -11,8 +11,10 @@ const errors = require('./middleware/errors.middleware');
 
 const cacheRouter = require('./route/cache.route');
 const datasetRouter = require('./route/dataset.route');
+const datasetV1Router = require('./route/dataset-v1.route');
 const tilesetRouter = require('./route/tileset.route');
 const tracksRouter = require('./route/tracks.route');
+const tracksV1Router = require('./route/tracks-v1.route');
 
 const app = new Koa();
 if (process.env.NODE_ENV === 'development') {
@@ -30,6 +32,8 @@ app.use(cacheRouter.routes()).use(cacheRouter.allowedMethods());
 app.use(datasetRouter.routes()).use(datasetRouter.allowedMethods());
 app.use(tilesetRouter.routes()).use(tilesetRouter.allowedMethods());
 app.use(tracksRouter.routes()).use(tracksRouter.allowedMethods());
+app.use(tracksV1Router.routes()).use(tracksV1Router.allowedMethods());
+app.use(datasetV1Router.routes()).use(datasetV1Router.allowedMethods());
 
 app.listen(config.server.port);
 log.debug(`Server up and listening on port ${config.server.port}`);

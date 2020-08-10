@@ -7,7 +7,11 @@ const transformSearchResult = source => entry => {
     ? { tilesetId: source.tileset }
     : { dataset: source.dataset.name };
 
-  const { firstTimestamp: firstTransmissionDate, lastTimestamp: lastTransmissionDate, ...entrySource } = entry._source;
+  const {
+    firstTimestamp: firstTransmissionDate,
+    lastTimestamp: lastTransmissionDate,
+    ...entrySource
+  } = entry._source;
 
   return {
     id: entry._id,
@@ -51,9 +55,16 @@ const transformSuggestionsResults = ({
 };
 
 module.exports = source => {
-  const index = source.dataset
-    ? source.dataset.vesselIndex
-    : source.tileset.toLowerCase();
+  let index;
+  if (source.dataset) {
+    if (source.version === 'v1') {
+      index = source.dataset.configuration.index;
+    } else {
+      index = source.dataset.vesselIndex;
+    }
+  } else {
+    index = source.tileset.toLowerCase();
+  }
 
   log.debug(`Searching in elasticsearch index ${index}`);
 

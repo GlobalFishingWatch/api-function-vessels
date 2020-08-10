@@ -1,28 +1,12 @@
 const Router = require('koa-router');
 const { koa } = require('auth-middleware');
 const loadDatasetMiddleware = require('../middleware/load-dataset.middleware');
+const checkDatasetTypeMiddleware = require('../middleware/check-type-dataset.middleware');
 const trackService = require('../service/tracks.service');
 const log = require('../log');
 const { tracksValidation } = require('../validation/track.validation');
 const encodeService = require('../service/encode.service');
 const { redis } = require('../middleware/caching.middleware');
-
-const thinning = require('../service/thinning.service');
-
-const THINNING_PARAMS = {
-  distanceFishing: 2,
-  bearingValFishing: 90,
-  minAccuracyFishing: 90,
-  changeSpeedFishing: 80,
-  distanceEncounter: 2,
-  bearingValEncounter: 90,
-  minAccuracyEncounter: 90,
-  changeSpeedEncounter: 80,
-  distanceTransit: 4,
-  bearingValTransit: 120,
-  minAccuracyTransit: 150,
-  changeSpeedTransit: 80,
-};
 
 class TracksRouter {
   static async getTracks(ctx) {
@@ -45,23 +29,12 @@ class TracksRouter {
       additionalFeatures: fields.filter(f => f !== 'lonlat'),
       params,
       fields,
+      version: ctx.state.datasetVersion,
     });
 
     log.debug(`Looking up track for vessel ${vesselId}`);
-    let records = null;
-    if (!ctx.state.dataset) {
-      if (ctx.request.url.indexOf('carriers') >= 0) {
-        records = await trackLoader.loadCarriers(vesselId);
-      } else {
-        records = await trackLoader.loadFishing(vesselId);
-      }
-      if (!ctx.state.user) {
-        log.debug('Thinning tracks');
-        records = thinning(records, THINNING_PARAMS);
-      }
-    } else {
-      records = await trackLoader.load(vesselId);
-    }
+
+    const records = await trackLoader.load(vesselId);
 
     log.debug(`Converting the records to format ${format}`);
     const result = trackLoader.formatters[format](records);
@@ -87,19 +60,10 @@ class TracksRouter {
 }
 
 const router = new Router({
-  prefix: '/datasets',
+  prefix: '/v1/datasets',
 });
 router.use(koa.obtainUser(false));
-router.get(
-  '/fishing/vessels/:vesselId/tracks',
-  tracksValidation,
-  TracksRouter.getTracks,
-);
-router.get(
-  '/carriers/vessels/:vesselId/tracks',
-  tracksValidation,
-  TracksRouter.getTracks,
-);
+
 router.get(
   '/:dataset/vessels/:vesselId/tracks',
   koa.checkPermissionsWithRequestParams([
@@ -107,7 +71,8 @@ router.get(
   ]),
   redis([]),
   tracksValidation,
-  loadDatasetMiddleware(),
+  loadDatasetMiddleware('v1'),
+  checkDatasetTypeMiddleware('carriers-tracks'),
   TracksRouter.getTracks,
 );
 

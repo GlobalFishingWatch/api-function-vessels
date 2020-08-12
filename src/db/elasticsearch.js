@@ -3,5 +3,5 @@ const config = require('../config');
 
 module.exports = new Client({
   host: config.elasticsearch.server,
-  apiVersion: '7.x',
+  apiVersion: '5.6',
 });

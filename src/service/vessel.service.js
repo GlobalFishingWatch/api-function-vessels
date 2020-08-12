@@ -113,7 +113,7 @@ module.exports = source => {
     get(vesselId) {
       const identity = {
         index,
-        // type: 'vessel',
+        type: 'vessel',
         id: vesselId,
       };
       return elasticsearch.get(identity).then(transformSearchResult(source));

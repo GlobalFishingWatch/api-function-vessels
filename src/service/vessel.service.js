@@ -7,7 +7,11 @@ const transformSearchResult = source => entry => {
     ? { tilesetId: source.tileset }
     : { dataset: source.dataset.name };
 
-  const { firstTimestamp: firstTransmissionDate, lastTimestamp: lastTransmissionDate, ...entrySource } = entry._source;
+  const {
+    firstTimestamp: firstTransmissionDate,
+    lastTimestamp: lastTransmissionDate,
+    ...entrySource
+  } = entry._source;
 
   return {
     id: entry._id,
@@ -109,7 +113,7 @@ module.exports = source => {
     get(vesselId) {
       const identity = {
         index,
-        type: 'vessel',
+        // type: 'vessel',
         id: vesselId,
       };
       return elasticsearch.get(identity).then(transformSearchResult(source));

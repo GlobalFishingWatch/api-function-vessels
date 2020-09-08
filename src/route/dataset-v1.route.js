@@ -21,13 +21,15 @@ class DatasetRouter {
       offset: ctx.query.offset,
       query: ctx.query.query,
       queryFields: ctx.query.queryFields,
+      suggestField: ctx.query.suggestField,
       querySuggestions: ctx.query.querySuggestions,
     };
     log.debug('Querying vessels search index');
+
     const results = await vesselService({
       dataset: ctx.state.dataset,
       version: ctx.state.datasetVersion,
-    }).search(query);
+    }).searchWithSuggest(query);
 
     log.debug(`Returning ${results.entries.length} / ${results.total} results`);
     ctx.state.cacheTags = [`dataset`, `dataset-${ctx.params.dataset}`];

@@ -22,13 +22,22 @@ const transformSearchResult = source => entry => {
   };
 };
 
+const transformSuggestResult = (suggests, query) => {
+  let suggestion = '';
+  suggests.forEach(it => {
+    suggestion += it.options.length ? `${it.options[0].text} ` : `${it.text} `;
+  })
+  suggestion = suggestion.toUpperCase().trim()
+  return query.toUpperCase() !== suggestion ? suggestion : null;
+}
+
 const calculateNextOffset = (query, results) =>
   query.offset + query.limit <= results.hits.total
     ? query.offset + query.limit
     : null;
 
-const transformSearchResults = ({ query, source }) => results => {
-  return {
+const transformSearchResults = ({ query, source, includeMetadata }) => results => {
+  const response = {
     query: query.query,
     total: results.hits.total,
     limit: query.limit,
@@ -36,6 +45,14 @@ const transformSearchResults = ({ query, source }) => results => {
     nextOffset: calculateNextOffset(query, results),
     entries: results.hits.hits.map(transformSearchResult(source)),
   };
+
+  if (includeMetadata !== undefined && includeMetadata === true) {
+    response.metadata = {
+      suggestion: transformSuggestResult(results.suggest.searchSuggest, query.query),
+    };
+  }
+
+  return response;
 };
 
 const transformSuggestionsResults = ({
@@ -117,10 +134,38 @@ module.exports = source => {
       return results;
     },
 
+    async searchWithSuggest(query) {
+      const elasticSearchQuery = {
+        index,
+        from: query.offset || 0,
+        size: query.limit || 10,
+        body: {
+          query: {
+            query_string: {
+              query: query.query,
+              allow_leading_wildcard: true,
+              ...(query.queryFields && { fields: query.queryFields }),
+            },
+          },
+          suggest : {
+            text: query.query,
+            searchSuggest: {
+              term: {
+                field: query.suggestField,
+              },
+            },
+          },
+        },
+      };
+
+      return elasticsearch
+        .search(elasticSearchQuery)
+        .then(transformSearchResults({ query, source, includeMetadata: true }));
+    },
+
     get(vesselId) {
       const identity = {
         index,
-        // type: 'vessel',
         id: vesselId,
       };
       return elasticsearch.get(identity).then(transformSearchResult(source));

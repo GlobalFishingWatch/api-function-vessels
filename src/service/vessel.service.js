@@ -23,11 +23,10 @@ const transformSearchResult = source => entry => {
 };
 
 const transformSuggestResult = (suggests, query) => {
-  let suggestion = '';
-  suggests.forEach(it => {
-    suggestion += it.options.length ? `${it.options[0].text} ` : `${it.text} `;
-  })
-  suggestion = suggestion.toUpperCase().trim()
+  const suggestion = suggests
+    .map(it => it.options.length ? it.options[0].text : it.text)
+    .join(" ")
+    .toUpperCase();
   return query.toUpperCase() !== suggestion ? suggestion : null;
 }
 
@@ -37,22 +36,17 @@ const calculateNextOffset = (query, results) =>
     : null;
 
 const transformSearchResults = ({ query, source, includeMetadata }) => results => {
-  const response = {
+  return {
     query: query.query,
     total: results.hits.total,
     limit: query.limit,
     offset: query.offset,
     nextOffset: calculateNextOffset(query, results),
     entries: results.hits.hits.map(transformSearchResult(source)),
+    metadata: includeMetadata && includeMetadata === true ?
+      { suggestion: transformSuggestResult(results.suggest.searchSuggest, query.query) }
+      : undefined,
   };
-
-  if (includeMetadata !== undefined && includeMetadata === true) {
-    response.metadata = {
-      suggestion: transformSuggestResult(results.suggest.searchSuggest, query.query),
-    };
-  }
-
-  return response;
 };
 
 const transformSuggestionsResults = ({

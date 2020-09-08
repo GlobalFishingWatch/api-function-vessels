@@ -2,10 +2,12 @@ const Joi = require('@hapi/joi');
 const {
   errors: { UnprocessableEntityException },
 } = require('auth-middleware');
+const { DEFAULT_PROPERTY_SUGGEST } = require('../constant')
 
 const datasetDefault = {
   offset: 0,
   queryFields: [],
+  suggestField: DEFAULT_PROPERTY_SUGGEST,
   querySuggestions: false,
   limit: 10,
   binary: false,
@@ -18,6 +20,7 @@ const schemaDataset = Joi.object({
     .default(datasetDefault.limit),
   query: Joi.string().required(),
   binary: Joi.boolean().default(datasetDefault.binary),
+  suggestField: Joi.string().default(datasetDefault.suggestField),
   queryFields: Joi.string().default(datasetDefault.queryFields),
   querySuggestions: Joi.boolean().default(datasetDefault.querySuggestions),
   offset: Joi.number()

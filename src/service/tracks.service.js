@@ -196,6 +196,9 @@ module.exports = ({
         }
         date.setFullYear(date.getFullYear() + 1);
       }
+      if (!baseQuery) {
+        return [];
+      }
       if (unions.length > 0) {
         unions[unions.length - 1].where('timestamp', '<', endDate);
         baseQuery = baseQuery.union(unions);

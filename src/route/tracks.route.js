@@ -3,7 +3,7 @@ const { koa } = require('auth-middleware');
 const loadDatasetMiddleware = require('../middleware/load-dataset.middleware');
 const trackService = require('../service/tracks.service');
 const log = require('../log');
-const { tracksValidation } = require('../validation/track.validation');
+const { tracksV0Validation } = require('../validation/track.validation');
 const encodeService = require('../service/encode.service');
 const { redis } = require('../middleware/caching.middleware');
 
@@ -92,12 +92,12 @@ const router = new Router({
 router.use(koa.obtainUser(false));
 router.get(
   '/fishing/vessels/:vesselId/tracks',
-  tracksValidation,
+  tracksV0Validation,
   TracksRouter.getTracks,
 );
 router.get(
   '/carriers/vessels/:vesselId/tracks',
-  tracksValidation,
+  tracksV0Validation,
   TracksRouter.getTracks,
 );
 router.get(
@@ -106,7 +106,7 @@ router.get(
     { action: 'read', type: 'dataset', valueParam: 'dataset' },
   ]),
   redis([]),
-  tracksValidation,
+  tracksV0Validation,
   loadDatasetMiddleware(),
   TracksRouter.getTracks,
 );

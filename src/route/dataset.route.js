@@ -8,8 +8,8 @@ const vesselService = require('../service/vessel.service');
 const loadDatasetMiddleware = require('../middleware/load-dataset.middleware');
 const log = require('../log');
 const {
-  datasetValidation,
-  datasetOfVesselIdValidation,
+  datasetV0Validation,
+  datasetOfVesselIdV0Validation,
 } = require('../validation/dataset.validation');
 const encodeService = require('../service/encode.service');
 const { redis } = require('../middleware/caching.middleware');
@@ -70,7 +70,7 @@ router.get(
     { action: 'read', type: 'dataset', valueParam: 'dataset' },
   ]),
   redis([]),
-  datasetValidation,
+  datasetV0Validation,
   loadDatasetMiddleware(),
   DatasetRouter.getAllVessels,
 );
@@ -81,7 +81,7 @@ router.get(
     { action: 'read', type: 'dataset', valueParam: 'dataset' },
   ]),
   redis([]),
-  datasetOfVesselIdValidation,
+  datasetOfVesselIdV0Validation,
   loadDatasetMiddleware(),
   DatasetRouter.getVesselById,
 );

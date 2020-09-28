@@ -30,6 +30,11 @@ message TilesetVesselInfo {
 }
 
 
+message DatasetVesselV1Query {
+  string dataset = 10;
+  repeated DatasetVesselQuery results = 11;
+}
+
 message DatasetVesselQuery {
   string query = 1;
   uint32 total = 2;

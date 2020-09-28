@@ -256,7 +256,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationError'
-
   '/datasets/{dataset}/vessels':
     get:
       summary: |
@@ -374,6 +373,213 @@ paths:
           in: path
           description: |
             Name of the dataset you want to query
+          required: true
+          schema:
+            type: string
+        - name: vesselId
+          in: path
+          description: |
+            Id of the vessel to get the tracks for
+          required: true
+          schema:
+            type: string
+        - name: fields
+          in: query
+          description: |
+            Comma-separated list of additional fields to include in the
+            tracks, such as points classified as fishing, per-point speed and
+            courses, etc. lonlat only applies when using format=valueArray, otherwise lat and lon are compulsorily included in GeoJSON responses.
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - lonlat
+                - timestamp
+                - fishing
+                - speed
+                - course
+        - name: startDate
+          in: query
+          description: |
+            Temporal filter for the track, will return only the paths of the track
+            which happened after this moment
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          description: |
+            Temporal filter for the track, will return only the paths of the track
+            which happened before this moment
+          schema:
+            type: string
+            format: date-time
+        - name: format
+          in: query
+          description: |
+            Specific encoding format to use for the track. Possible values lines, points or valueArray.
+            valueArray: is a custom compact format, an array with all the fields serialized. The format is further explained in this issue: <a href="https://github.com/GlobalFishingWatch/gfw-eng-tasks/issues/54#issuecomment-620521038">valueArray format</a>.
+            lines: Geojson with a single
+            `LineString` feature containing all the points in the track
+            points: Geojson with a `FeatureCollection` containing a `Point` feature for every point in the track
+          schema:
+            type: string
+            enum:
+              - lines
+              - points
+              - valueArray
+            default: lines
+        - name: wrapLongitudes
+          in: query
+          description: |
+            When false, deviate from the geojson standard and don't wrap longitudes between [-180, 180],
+            so that tracks going over the antimeridean line don't reset back to the negated longitudes.
+            This should be false if you are using an atlantic-centered visualization, such as QGis, or when
+            using leaflet or mapbox to render the track. See https://macwright.org/2016/09/26/the-180th-meridian.html.
+          schema:
+            type: boolean
+            default: false
+        - name: binary
+          in: query
+          description: |
+            When true, the response is encoded in protobuffer, if false, the response is a json
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          content:
+            application/vnd.geo+json:
+              schema:
+                $ref: '#/components/schemas/GeojsonTrack'
+          description: |
+            Expected response to a successful request.
+        '401':
+          description: Unauthorized, either the api key is invalid or expired.
+        '400':
+          description: Bad request. Invalid or wrong parameters were provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+  '/v1/vessels':
+    get:
+      summary: |
+        Searches for vessels
+      description: |
+        Searches for a vessel given a free form query. The query will be matched against any identifiers for the vessel, and a paginated, ranked results list will be returned.
+      tags:
+        - VesselsAPI
+      parameters:
+        - name: datasets
+          in: query
+          description: |
+            Dataset to query vessels from
+          required: true
+          schema:
+            type: string
+        - name: query
+          in: query
+          description: |
+            Search query.
+          required: true
+          schema:
+            type: string
+        - name: queryFields
+          in: query
+          description: |
+            List of fields to match with the search query instead of the entire object property
+          schema:
+            type: array
+            items:
+              type: string
+        - name: querySuggestions
+          in: query
+          description: |
+            Includes suggested results for the given query
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          description: |
+            Amount of search results to return. Maximum 25.
+          required: false
+          schema:
+            type: integer
+            maximum: 25
+            default: 10
+        - name: offset
+          in: query
+          description: |
+            Offset into the search results, used for pagination.
+          required: false
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: |
+            Expected response to a successful request.
+        '401':
+          description: Unauthorized, either the api key is invalid or expired.
+        '400':
+          description: Bad request. Invalid or wrong parameters were provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  '/v1/vessels/{vesselId}':
+    get:
+      summary: |
+        Obtains the characteristics of a single vessel
+      description: |
+        Obtains all the characteristics that describe a single vessel, such as its name and identifiers.
+      tags:
+        - VesselsAPI
+      parameters:
+        - name: datasets
+          in: query
+          description: |
+            Dataset to query vessels from
+          required: true
+          schema:
+            type: string
+        - name: vesselId
+          in: path
+          description: |
+            Id of the vessel to get the characteristics from
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: |
+            Expected response to a successful request.
+        '401':
+          description: Unauthorized, either the api key is invalid or expired.
+        '400':
+          description: Bad request. Invalid or wrong parameters were provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  '/v1/vessels/{vesselId}/tracks':
+    get:
+      summary: |
+        Gets the tracks of a single vessel
+      description: |
+        Obtains all the tracks of a single vessel.
+      tags:
+        - VesselsAPI
+      parameters:
+        - name: datasets
+          in: query
+          description: |
+            Dataset to query vessels from
           required: true
           schema:
             type: string

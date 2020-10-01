@@ -494,13 +494,14 @@ paths:
             type: array
             items:
               type: string
-        - name: querySuggestions
+        - name: suggestField
           in: query
           description: |
-            Includes suggested results for the given query
+            Includes suggested results for the given query for this property
           schema:
-            type: boolean
-            default: false
+            type: string
+            enum: [ shipname, imo, mmsi, flag ]
+            default: shipname
         - name: limit
           in: query
           description: |

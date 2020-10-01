@@ -2,7 +2,7 @@ const Joi = require('@hapi/joi');
 const {
   errors: { UnprocessableEntityException },
 } = require('auth-middleware');
-const { DEFAULT_PROPERTY_SUGGEST } = require('../constant');
+const { VESSELS_CONSTANTS: { DEFAULT_PROPERTY_SUGGEST } } = require('../constant');
 
 const datasetDefault = {
   offset: 0,

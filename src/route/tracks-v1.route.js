@@ -8,6 +8,23 @@ const { tracksV1Validation } = require('../validation/track.validation');
 const encodeService = require('../service/encode.service');
 const { redis } = require('../middleware/caching.middleware');
 
+const thinning = require('../service/thinning.service');
+
+const THINNING_PARAMS = {
+  distanceFishing: 2,
+  bearingValFishing: 90,
+  minAccuracyFishing: 90,
+  changeSpeedFishing: 80,
+  distanceEncounter: 2,
+  bearingValEncounter: 90,
+  minAccuracyEncounter: 90,
+  changeSpeedEncounter: 80,
+  distanceTransit: 4,
+  bearingValTransit: 120,
+  minAccuracyTransit: 150,
+  changeSpeedTransit: 80,
+};
+
 class TracksRouter {
   static async getTracks(ctx) {
     const { vesselId } = ctx.params;
@@ -33,8 +50,18 @@ class TracksRouter {
     });
 
     log.debug(`Looking up track for vessel ${vesselId}`);
+    let records;
+    if (dataset.id.indexOf('fishing') >= 0) {
+      log.debug('Loading fishing tracks');
+      records = await trackLoader.loadFishing(vesselId);
 
-    const records = await trackLoader.load(vesselId);
+      if (!ctx.state.user) {
+        log.debug('Thinning tracks');
+        records = thinning(records, THINNING_PARAMS);
+      }
+    } else {
+      records = await trackLoader.load(vesselId);
+    }
 
     log.debug(`Converting the records to format ${format}`);
     const result = trackLoader.formatters[format](records);

@@ -12,7 +12,8 @@ const datasetDefault = {
   limit: 10,
   binary: false,
 };
-const schemaDatasetV0 = Joi.object({
+
+const schemaVesselV1 = Joi.object({
   limit: Joi.number()
     .integer()
     .min(1)
@@ -27,15 +28,11 @@ const schemaDatasetV0 = Joi.object({
     .integer()
     .min(0)
     .default(datasetDefault.offset),
+  datasets: Joi.string().required(),
 });
-
-const schemaVesselDatasetV0 = Joi.object({
-  binary: Joi.boolean().default(false),
-});
-
-async function datasetV0Validation(ctx, next) {
+async function vesselV1Validation(ctx, next) {
   try {
-    const value = await schemaDatasetV0.validateAsync(ctx.request.query);
+    const value = await schemaVesselV1.validateAsync(ctx.request.query);
 
     Object.keys(value).forEach(k => {
       ctx.query[k] = value[k];
@@ -46,17 +43,41 @@ async function datasetV0Validation(ctx, next) {
   } catch (err) {
     throw new UnprocessableEntityException('Invalid query', err.details);
   }
+
+  if (ctx.query.datasets) {
+    ctx.query.datasets = ctx.query.datasets
+      .split(',')
+      .map(d => (d.indexOf(':') === -1 ? `${d}:latest` : d));
+  }
   await next();
 }
 
-async function datasetOfVesselIdV0Validation(ctx, next) {
+
+const schemaVesselDatasetV1 = Joi.object({
+  binary: Joi.boolean().default(false),
+  datasets: Joi.string().required(),
+});
+async function vesselIdV1Validation(ctx, next) {
   try {
-    const value = await schemaVesselDatasetV0.validateAsync(ctx.request.query);
+    const value = await schemaVesselDatasetV1.validateAsync(ctx.request.query);
     Object.keys(value).forEach(k => {
       ctx.query[k] = value[k];
     });
   } catch (err) {
     throw new UnprocessableEntityException('Invalid query', err.details);
+  }
+  if (ctx.query.datasets) {
+    ctx.query.datasets = ctx.query.datasets
+      .split(',')
+      .map(d => (d.indexOf(':') === -1 ? `${d}:latest` : d));
+    if (ctx.query.datasets.length > 1) {
+      throw new UnprocessableEntityException('Invalid query', [
+        {
+          path: ['datasets'],
+          message: 'Only supported one dataset',
+        },
+      ]);
+    }
   }
   await next();
 }
@@ -64,6 +85,6 @@ async function datasetOfVesselIdV0Validation(ctx, next) {
 
 
 module.exports = {
-  datasetV0Validation,
-  datasetOfVesselIdV0Validation,
+  vesselV1Validation,
+  vesselIdV1Validation
 };

@@ -4,7 +4,7 @@ const {
 } = require('auth-middleware');
 const { VESSELS_CONSTANTS: { DEFAULT_PROPERTY_SUGGEST } } = require('../constant');
 
-const datasetDefault = {
+const vesselDefault = {
   offset: 0,
   queryFields: [],
   suggestField: DEFAULT_PROPERTY_SUGGEST,
@@ -18,16 +18,16 @@ const schemaVesselV1 = Joi.object({
     .integer()
     .min(1)
     .max(25)
-    .default(datasetDefault.limit),
+    .default(vesselDefault.limit),
   query: Joi.string().required(),
-  binary: Joi.boolean().default(datasetDefault.binary),
-  suggestField: Joi.string().default(datasetDefault.suggestField),
-  queryFields: Joi.string().default(datasetDefault.queryFields),
-  querySuggestions: Joi.boolean().default(datasetDefault.querySuggestions),
+  binary: Joi.boolean().default(vesselDefault.binary),
+  suggestField: Joi.string().default(vesselDefault.suggestField),
+  queryFields: Joi.string().default(vesselDefault.queryFields),
+  querySuggestions: Joi.boolean().default(vesselDefault.querySuggestions),
   offset: Joi.number()
     .integer()
     .min(0)
-    .default(datasetDefault.offset),
+    .default(vesselDefault.offset),
   datasets: Joi.string().required(),
 });
 async function vesselV1Validation(ctx, next) {
@@ -82,9 +82,28 @@ async function vesselIdV1Validation(ctx, next) {
   await next();
 }
 
+const schemaVesselSearchV1 = Joi.object({
+  datasets: Joi.array().items(Joi.string()),
+  query: Joi.object({
+    term: Joi.string(),
+    fields: Joi.array().items(Joi.string())
+  }),
+});
+async function vesselSearchValidation(ctx, next) {
+  try {
+    const value = await schemaVesselSearchV1.validateAsync(ctx.request.body);
+    Object.keys(value).forEach(k => {
+      ctx.query[k] = value[k];
+    });
+  } catch (err) {
+    throw new UnprocessableEntityException('Invalid body', err.details);
+  }
+  await next();
+}
 
 
 module.exports = {
   vesselV1Validation,
-  vesselIdV1Validation
+  vesselIdV1Validation,
+  vesselSearchValidation
 };

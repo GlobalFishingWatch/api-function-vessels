@@ -214,7 +214,7 @@ module.exports = source => {
     get(vesselId) {
       const identity = {
         index,
-        id: vesselId,
+        vessel_id: vesselId,
       };
       return elasticsearch.get(identity).then(transformSearchResult(source));
     },

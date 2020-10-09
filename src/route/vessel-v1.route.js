@@ -116,7 +116,7 @@ router.get(
 
 router.get(
   '/vessels/search',
- koa.checkPermissionsWithRequestParams([
+  koa.checkPermissionsWithRequestParams([
     { action: 'read', type: 'dataset', valueQueryParam: 'datasets' },
   ]),
   redis([]),

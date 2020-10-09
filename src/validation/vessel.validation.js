@@ -1,8 +1,20 @@
 const Joi = require('@hapi/joi');
 const {
-  errors: { UnprocessableEntityException },
+  errors: { UnprocessableEntityException, BadRequestException },
 } = require('auth-middleware');
-const { VESSELS_CONSTANTS: { DEFAULT_PROPERTY_SUGGEST } } = require('../constant');
+const SqlWhereParser = require('sql-where-parser');
+const log = require('../log');
+const { VESSELS_CONSTANTS: {
+  DEFAULT_PROPERTY_SUGGEST, IMO, MMSI, SHIPNAME, VESSEL_ID, FLAG, CALLSIGN
+}
+} = require('../constant');
+const { sanitizeSQL } = require('../utils/sanitize-sql')
+
+function splitDatasets(datasetsFromQuery) {
+  return datasetsFromQuery
+    .split(',')
+    .map(d => (d.indexOf(':') === -1 ? `${d}:latest` : d));
+}
 
 const vesselDefault = {
   offset: 0,
@@ -45,13 +57,10 @@ async function vesselV1Validation(ctx, next) {
   }
 
   if (ctx.query.datasets) {
-    ctx.query.datasets = ctx.query.datasets
-      .split(',')
-      .map(d => (d.indexOf(':') === -1 ? `${d}:latest` : d));
+    ctx.query.datasets = splitDatasets(ctx.query.datasets)
   }
   await next();
 }
-
 
 const schemaVesselDatasetV1 = Joi.object({
   binary: Joi.boolean().default(false),
@@ -67,9 +76,7 @@ async function vesselIdV1Validation(ctx, next) {
     throw new UnprocessableEntityException('Invalid query', err.details);
   }
   if (ctx.query.datasets) {
-    ctx.query.datasets = ctx.query.datasets
-      .split(',')
-      .map(d => (d.indexOf(':') === -1 ? `${d}:latest` : d));
+    ctx.query.datasets = splitDatasets(ctx.query.datasets)
     if (ctx.query.datasets.length > 1) {
       throw new UnprocessableEntityException('Invalid query', [
         {
@@ -83,27 +90,70 @@ async function vesselIdV1Validation(ctx, next) {
 }
 
 const schemaVesselSearchV1 = Joi.object({
-  datasets: Joi.array().items(Joi.string()),
-  query: Joi.object({
-    term: Joi.string(),
-    fields: Joi.array().items(Joi.string())
-  }),
+  offset: Joi.number().default(vesselDefault.offset),
+  limit: Joi.number().default(vesselDefault.limit),
+  datasets: Joi.string().required(),
+  query: Joi.string().required(),
 });
-async function vesselSearchValidation(ctx, next) {
+async function vesselSearchV1Validation(ctx, next) {
   try {
-    const value = await schemaVesselSearchV1.validateAsync(ctx.request.body);
+    const value = await schemaVesselSearchV1.validateAsync(ctx.request.query);
     Object.keys(value).forEach(k => {
       ctx.query[k] = value[k];
     });
+    if (ctx.query.datasets) {
+      ctx.query.datasets = splitDatasets(ctx.query.datasets)
+    }
   } catch (err) {
-    throw new UnprocessableEntityException('Invalid body', err.details);
+    throw new UnprocessableEntityException('Invalid query', err.details);
   }
   await next();
 }
 
+// Advance search SQL validation
+function validateFields(where, fields) {
+  if (Array.isArray(where)) {
+    where.forEach((condition) => validateFields(condition, fields));
+  } else {
+    if (typeof where === 'string') {
+      throw new BadRequestException('The query must not start and finish with quotes');
+    }
+    Object.keys(where).forEach((k) => {
+      if (k.toLowerCase() === 'and' || k.toLowerCase() === 'or') {
+        validateFields(where[k], fields);
+      } else if (Array.isArray(where[k])) {
+        if (
+          !where[k].some((c) => fields.indexOf(c) >= 0)
+        ) {
+          throw new BadRequestException(
+            `The column "${where[k][0].toUpperCase()}" is not supported to search. Supported columns: "${fields.map(f => f.toUpperCase())}"`
+          );
+        }
+      } else {
+        validateFields(where[k], fields);
+      }
+    });
+  }
+}
+async function advanceSearchSqlValidation(ctx, next) {
+  let { query: { query: sql } } = ctx;
+  sql = sanitizeSQL(sql)
+  const fieldsAllowed = [IMO, MMSI, SHIPNAME, VESSEL_ID, FLAG, CALLSIGN];
+  let whereParsed;
+  try {
+    const parser = new SqlWhereParser();
+    whereParsed = parser.parse(sql);
+  } catch (err) {
+    throw new BadRequestException(`Invalid query: ${err.message}`)
+  }
+  validateFields(whereParsed, fieldsAllowed);
+  ctx.query.query.sql = sql;
+  await next()
+}
 
 module.exports = {
   vesselV1Validation,
   vesselIdV1Validation,
-  vesselSearchValidation
+  vesselSearchV1Validation,
+  advanceSearchSqlValidation,
 };

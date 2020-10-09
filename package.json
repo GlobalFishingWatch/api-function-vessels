@@ -37,6 +37,7 @@
     "request": "^2.88.2",
     "request-promise": "^4.2.6",
     "shrink-ray-current": "^4.1.2",
+    "sql-where-parser": "^2.2.1",
     "url-pattern": "^1.0.3",
     "winston": "^3.3.3"
   },

@@ -76,6 +76,10 @@ class VesselRouter {
         version: ctx.state.datasetVersion,
       }).get(vesselId);
 
+      if (!result) {
+        throw new NotFoundException();
+      }
+
       log.debug('Returning vessel information');
       ctx.state.cacheTags = [
         `dataset`,

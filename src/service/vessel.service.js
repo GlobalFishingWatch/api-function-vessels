@@ -1,7 +1,9 @@
 /* eslint-disable no-underscore-dangle */
 const elasticsearch = require('../db/elasticsearch');
 const log = require('../log');
+const { parseSqlToElasticSearchQuery } = require('../parser/sql-parser');
 const { VESSELS_CONSTANTS: { IMO, MMSI, SHIPNAME, FLAG, VESSEL_ID, QUERY_TYPES } } = require('../constant');
+const { sanitizeSQL } = require('../utils/sanitize-sql');
 
 const transformSearchResult = source => entry => {
   const baseFields = source.tileset
@@ -61,20 +63,21 @@ const sanitizeQuery = query => {
 
 
 const calculateNextOffset = (query, results) =>
-  query.offset + query.limit <= results.hits.total
+  query.offset + query.limit <= results.hits.total.value
     ? query.offset + query.limit
     : null;
 
-const transformSearchResults = ({ query, source, includeMetadata }) => results => {
+const transformSearchResults = ({ query, sqlQuery, source, includeMetadata }) => results => {
+  const { body } = results;
   return {
-    query: query.query,
-    total: results.hits.total,
+    query: sqlQuery || query.query,
+    total: body.hits.total,
     limit: query.limit,
     offset: query.offset,
-    nextOffset: calculateNextOffset(query, results),
-    entries: results.hits.hits.map(transformSearchResult(source)),
-    metadata: includeMetadata && includeMetadata === true ?
-      { suggestion: transformSuggestResult(results.suggest.searchSuggest, query.query) }
+    nextOffset: calculateNextOffset(query, body),
+    entries: body.hits.hits.map(transformSearchResult(source)),
+    metadata: includeMetadata && includeMetadata === true && body.suggest ?
+      { suggestion: transformSuggestResult(body.suggest.searchSuggest, query.query) }
       : undefined,
   };
 };
@@ -209,6 +212,26 @@ module.exports = source => {
       return elasticsearch
         .search(elasticSearchQuery)
         .then(transformSearchResults({ query, source, includeMetadata: true }));
+    },
+
+    async advanceSearch(query) {
+      const { dataset: { configuration: { index: table } } } = source;
+      const sqlQuery = parseSqlToElasticSearchQuery(table, sanitizeSQL(query.query))
+      log.info(`SQL Query > ${sqlQuery}`)
+      const { body: { query: elasticSearchQuery } } = await elasticsearch.sql.translate({
+        body: {
+          query: sqlQuery
+        }
+      })
+      return elasticsearch
+        .search({
+          body: {
+            from: query.offset,
+            size: query.limit,
+            query: elasticSearchQuery
+          }
+        })
+        .then(transformSearchResults({ query, sqlQuery, source, includeMetadata: true }))
     },
 
     get(vesselId) {

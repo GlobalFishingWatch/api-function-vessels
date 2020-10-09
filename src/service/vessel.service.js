@@ -211,12 +211,29 @@ module.exports = source => {
         .then(transformSearchResults({ query, source, includeMetadata: true }));
     },
 
-    get(vesselId) {
-      const identity = {
+    async get(vesselId) {
+      const query = {
         index,
-        id: vesselId,
-      };
-      return elasticsearch.get(identity).then(transformSearchResult(source));
+        size: 1,
+        body: {
+          query: {
+            query_string: {
+              query: vesselId,
+              fields: [VESSEL_ID]
+            }
+          }
+        }
+      }
+      const { hits: { hits: vessels} } = await elasticsearch.search(query);
+      if (!vessels[0]) {
+        return null;
+      }
+      const { _source: vesselInfo } = vessels[0];
+      if (vesselInfo.id !== vesselId){
+        return null;
+      }
+
+      return (transformSearchResult(source)(vessels[0]))
     },
   };
 };

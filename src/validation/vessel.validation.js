@@ -115,8 +115,11 @@ function validateFields(where, fields) {
   if (Array.isArray(where)) {
     where.forEach((condition) => validateFields(condition, fields));
   } else {
-    if (typeof where === 'string') {
-      throw new BadRequestException('The query must not start and finish with quotes');
+    if (!where || typeof where === 'string') {
+      throw new UnprocessableEntityException('Invalid Query: ', {
+        message: 'Query malformed, remember to exclude where and use correct syntax.',
+        path: ['query'],
+      })
     }
     Object.keys(where).forEach((k) => {
       if (k.toLowerCase() === 'and' || k.toLowerCase() === 'or') {
@@ -125,9 +128,10 @@ function validateFields(where, fields) {
         if (
           !where[k].some((c) => fields.indexOf(c) >= 0)
         ) {
-          throw new BadRequestException(
-            `The column "${where[k][0].toUpperCase()}" is not supported to search. Supported columns: "${fields.map(f => f.toUpperCase())}"`
-          );
+          throw new UnprocessableEntityException('Invalid Query: ', {
+            message: `The column "${where[k][0].toUpperCase()}" is not supported to search. Supported columns: "${fields.map(f => f.toUpperCase())}"`,
+            path: ['query'],
+          })
         }
       } else {
         validateFields(where[k], fields);
@@ -144,7 +148,10 @@ async function advanceSearchSqlValidation(ctx, next) {
     const parser = new SqlWhereParser();
     whereParsed = parser.parse(sql);
   } catch (err) {
-    throw new BadRequestException(`Invalid query: ${err.message}`)
+    throw new UnprocessableEntityException('Invalid Query: ', {
+      message: `Query malformed, remember to exclude where and use correct syntax.`,
+      path: ['query'],
+    })
   }
   validateFields(whereParsed, fieldsAllowed);
   ctx.query.query.sql = sql;

@@ -1,9 +1,8 @@
 const Joi = require('@hapi/joi');
 const {
-  errors: { UnprocessableEntityException, BadRequestException },
+  errors: { UnprocessableEntityException },
 } = require('auth-middleware');
 const SqlWhereParser = require('sql-where-parser');
-const log = require('../log');
 const { VESSELS_CONSTANTS: {
   DEFAULT_PROPERTY_SUGGEST, IMO, MMSI, SHIPNAME, VESSEL_ID, FLAG, CALLSIGN
 }
@@ -25,13 +24,12 @@ const vesselDefault = {
   binary: false,
 };
 
-const schemaVesselV1 = Joi.object({
+const mainSchemaVesselV1 = {
   limit: Joi.number()
     .integer()
     .min(1)
     .max(25)
     .default(vesselDefault.limit),
-  query: Joi.string().required(),
   binary: Joi.boolean().default(vesselDefault.binary),
   suggestField: Joi.string().default(vesselDefault.suggestField),
   queryFields: Joi.string().default(vesselDefault.queryFields),
@@ -41,7 +39,17 @@ const schemaVesselV1 = Joi.object({
     .min(0)
     .default(vesselDefault.offset),
   datasets: Joi.string().required(),
-});
+};
+const schemaVesselV1 = Joi.alternatives().try(
+  Joi.object().keys({
+    ...mainSchemaVesselV1,
+    query: Joi.string().required(),
+  }),
+  Joi.object().keys({
+    ...mainSchemaVesselV1,
+    ids: Joi.string().required(),
+  }),
+);
 async function vesselV1Validation(ctx, next) {
   try {
     const value = await schemaVesselV1.validateAsync(ctx.request.query);
@@ -51,6 +59,9 @@ async function vesselV1Validation(ctx, next) {
     });
     if (ctx.query.queryFields && !Array.isArray(ctx.query.queryFields)) {
       ctx.query.queryFields = ctx.query.queryFields.split(',');
+    }
+    if (ctx.query.ids && !Array.isArray(ctx.query.ids)) {
+      ctx.query.ids = ctx.query.ids.split(',');
     }
   } catch (err) {
     throw new UnprocessableEntityException('Invalid query', err.details);

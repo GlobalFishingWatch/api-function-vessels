@@ -96,7 +96,9 @@ const transformSuggestionsResults = ({
 };
 
 const getQueryByType = (type, index, query) => {
-  const sanitizedQuery = sanitizeQuery(query.query);
+  const sanitizedQuery = type !== QUERY_TYPES.IDS
+    ? sanitizeQuery(query.query)
+    : null;
 
   const suggest = {
     text: sanitizedQuery,
@@ -117,6 +119,16 @@ const getQueryByType = (type, index, query) => {
     },
   };
 
+  if (type === QUERY_TYPES.IDS) {
+    basicQuery.body.query = {
+      query_string: {
+        query: `"${query.ids.join(' ')}"`.replace(' ', '" "'),
+        fields: [VESSEL_ID],
+      },
+    }
+    basicQuery.body.suggest = {};
+  }
+
   if (type === QUERY_TYPES.PHRASE) {
     basicQuery.body.query = {
       match_phrase: {}
@@ -134,6 +146,16 @@ const getQueryByType = (type, index, query) => {
   }
 
   return basicQuery;
+}
+
+function getQueryType(query, ids) {
+  if (ids && Array.isArray(ids) && ids.length > 0) {
+    return QUERY_TYPES.IDS
+  }
+
+  return /^".*"$/.test(query.query)
+    ? QUERY_TYPES.PHRASE
+    : QUERY_TYPES.TOKENS;
 }
 
 module.exports = source => {
@@ -200,15 +222,13 @@ module.exports = source => {
     },
 
     async searchWithSuggest(query) {
-      const queryType = /^".*"$/.test(query.query)
-        ? QUERY_TYPES.PHRASE
-        : QUERY_TYPES.TOKENS;
+      const queryType = getQueryType(query.query, query.ids);
       log.info(`The query type is ${queryType}`, )
       const elasticSearchQuery = getQueryByType(queryType, index, query)
       log.info(`The query is ${JSON.stringify(elasticSearchQuery)}`, )
       return elasticsearch
         .search(elasticSearchQuery)
-        .then(transformSearchResults({ query, source, includeMetadata: true }));
+        .then(transformSearchResults({ query, source, includeMetadata: queryType !== QUERY_TYPES.IDS }));
     },
 
     async get(vesselId) {

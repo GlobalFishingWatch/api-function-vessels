@@ -44,6 +44,7 @@ class VesselRouter {
       limit: ctx.query.limit,
       offset: ctx.query.offset,
       query: ctx.query.query,
+      ids: ctx.query.ids,
       queryFields: ctx.query.queryFields,
       suggestField: ctx.query.suggestField,
       querySuggestions: ctx.query.querySuggestions,

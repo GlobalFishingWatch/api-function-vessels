@@ -9,7 +9,8 @@ module.exports = {
     VESSEL_ID: 'id',
     QUERY_TYPES: {
       PHRASE: 'phrase',
-      TOKENS: 'tokens'
+      TOKENS: 'tokens',
+      IDS: 'ids'
     }
   }
 }

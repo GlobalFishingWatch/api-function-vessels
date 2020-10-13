@@ -468,7 +468,9 @@ paths:
       summary: |
         Searches for vessels
       description: |
-        Searches for a vessel given a free form query. The query will be matched against any identifiers for the vessel, and a paginated, ranked results list will be returned.
+        Searches for a vessel given a free form query. The query will be matched against any identifiers for the vessel,
+        and a paginated, ranked results list will be returned. Query and Ids are required depends on the case.
+        If you use query as parameter then you must not use ids and vice-versa.
       tags:
         - VesselsAPI
       parameters:
@@ -479,11 +481,18 @@ paths:
           required: true
           schema:
             type: string
+        - name: ids
+          in: query
+          description: |
+            List of vessel id to get these vessels. The ids must be separated by comma.
+          required: false
+            schema:
+              type: string
         - name: query
           in: query
           description: |
             Search query.
-          required: true
+          required: false
           schema:
             type: string
         - name: queryFields

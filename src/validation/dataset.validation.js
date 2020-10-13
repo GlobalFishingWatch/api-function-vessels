@@ -32,13 +32,14 @@ const schemaDatasetV0 = Joi.object({
 const schemaVesselDatasetV0 = Joi.object({
   binary: Joi.boolean().default(false),
 });
-const schemaDatasetV1 = Joi.object({
+
+
+const mainSchemaDatasetV1 = {
   limit: Joi.number()
     .integer()
     .min(1)
     .max(25)
     .default(datasetDefault.limit),
-  query: Joi.string().required(),
   binary: Joi.boolean().default(datasetDefault.binary),
   suggestField: Joi.string().default(datasetDefault.suggestField),
   queryFields: Joi.string().default(datasetDefault.queryFields),
@@ -48,7 +49,17 @@ const schemaDatasetV1 = Joi.object({
     .min(0)
     .default(datasetDefault.offset),
   datasets: Joi.string().required(),
-});
+};
+const schemaDatasetV1 = Joi.alternatives().try(
+  Joi.object().keys({
+    ...mainSchemaDatasetV1,
+    query: Joi.string().required(),
+  }),
+  Joi.object().keys({
+    ...mainSchemaDatasetV1,
+    ids: Joi.string().required(),
+  }),
+);
 
 const schemaVesselDatasetV1 = Joi.object({
   binary: Joi.boolean().default(false),
@@ -91,6 +102,9 @@ async function datasetV1Validation(ctx, next) {
     });
     if (ctx.query.queryFields && !Array.isArray(ctx.query.queryFields)) {
       ctx.query.queryFields = ctx.query.queryFields.split(',');
+    }
+    if (ctx.query.ids && !Array.isArray(ctx.query.ids)) {
+      ctx.query.ids = ctx.query.ids.split(',');
     }
   } catch (err) {
     throw new UnprocessableEntityException('Invalid query', err.details);

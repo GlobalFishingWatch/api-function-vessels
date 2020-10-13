@@ -26,7 +26,7 @@ class DatasetRouter {
       querySuggestions: ctx.query.querySuggestions,
     };
     log.debug('Querying vessels search index');
-    console.log(query.ids)
+
     const results = await Promise.all(
       ctx.state.datasets.map(async dataset => {
         const result = await vesselService({

@@ -3,7 +3,7 @@ const {
 } = require('auth-middleware');
 const SqlWhereParser = require('sql-where-parser');
 const { VESSELS_CONSTANTS: { IMO, MMSI, SHIPNAME, VESSEL_ID, FLAG, CALLSIGN } } = require('../constant');
-const { sanitizeSQL } = require('../utils/sanitize-sql');
+const { removeWhitespace } = require('../utils/remove-whitespace');
 const { splitDatasets } = require('../utils/split-datasets');
 const {
   schemaGetAllVesselsV1,
@@ -105,7 +105,7 @@ async function advanceSearchSqlValidation(ctx, next) {
   try {
     const { query: { query: sql } } = ctx;
     const parser = new SqlWhereParser();
-    const whereParsed = parser.parse(sanitizeSQL(sql));
+    const whereParsed = parser.parse(removeWhitespace(sql));
     validateFields(whereParsed, [IMO, MMSI, SHIPNAME, VESSEL_ID, FLAG, CALLSIGN]);
     ctx.query.query.sql = sql;
   } catch (err) {

@@ -6,7 +6,8 @@ const elasticsearch = require('../db/elasticsearch');
 const log = require('../log');
 const { parseSqlToElasticSearchQuery } = require('../parser/sql-parser');
 const { VESSELS_CONSTANTS: { IMO, MMSI, SHIPNAME, FLAG, VESSEL_ID, QUERY_TYPES } } = require('../constant');
-const { sanitizeSQL } = require('../utils/sanitize-sql');
+const { removeWhitespace } = require('../utils/remove-whitespace');
+const { sanitizeSqlQuery } = require('../utils/sanitize-sql');
 
 const transformSource = source => result => {
   const entry = result.body ? result.body : result;
@@ -51,19 +52,6 @@ const getQueryFieldsFiltered = (query) => {
 
   return [SHIPNAME, FLAG, VESSEL_ID, IMO, MMSI]
 }
-
-const sanitizeQuery = query => {
-  /*eslint-disable */
-  return query
-    .replace(/[*\+\-=~><\"\?^\${}\(\)\:\!\/[\]\\\s]/g, '\\$&')
-    .replace(/\|\|/g, '\\||') // replace ||
-    .replace(/\&\&/g, '\\&&')
-    .replace(/AND/g, '\\A\\N\\D')
-    .replace(/OR/g, '\\O\\R')
-    .replace(/NOT/g, '\\N\\O\\T');
-  /* eslint-enable */
-};
-
 
 const calculateNextOffset = (query, results) =>
   query.offset + query.limit <= results.hits.total.value
@@ -115,7 +103,7 @@ const transformSuggestionsResults = ({
 
 const getQueryByType = (type, index, query) => {
   const sanitizedQuery = type !== QUERY_TYPES.IDS
-    ? sanitizeQuery(query.query)
+    ? sanitizeSqlQuery(query.query)
     : null;
 
   const suggest = {
@@ -137,16 +125,6 @@ const getQueryByType = (type, index, query) => {
     },
   };
 
-  if (type === QUERY_TYPES.IDS) {
-    basicQuery.body.query = {
-      query_string: {
-        query: `"${query.ids.join(' ')}"`.replace(' ', '" "'),
-        fields: [VESSEL_ID],
-      },
-    }
-    basicQuery.body.suggest = {};
-  }
-
   if (type === QUERY_TYPES.PHRASE) {
     basicQuery.body.query = {
       match_phrase: {}
@@ -166,11 +144,7 @@ const getQueryByType = (type, index, query) => {
   return basicQuery;
 }
 
-function getQueryType(query, ids) {
-  if (ids && Array.isArray(ids) && ids.length > 0) {
-    return QUERY_TYPES.IDS
-  }
-
+function getQueryType(query) {
   return /^".*"$/.test(query.query)
     ? QUERY_TYPES.PHRASE
     : QUERY_TYPES.TOKENS;
@@ -253,7 +227,7 @@ module.exports = source => {
     },
 
     async searchWithSuggest(query) {
-      const queryType = getQueryType(query.query, query.ids);
+      const queryType = getQueryType(query.query);
       log.info(`The query type is ${queryType}`, )
       const elasticSearchQuery = getQueryByType(queryType, index, query)
       log.info(`The query is ${JSON.stringify(elasticSearchQuery)}`, )
@@ -264,7 +238,7 @@ module.exports = source => {
 
     async advanceSearch(query) {
       const { dataset: { configuration: { index: table } } } = source;
-      const sqlQuery = parseSqlToElasticSearchQuery(table, sanitizeSQL(query.query))
+      const sqlQuery = parseSqlToElasticSearchQuery(table, removeWhitespace(query.query))
       log.info(`SQL Query > ${sqlQuery}`)
       const { body: { query: elasticSearchQuery } } = await elasticsearch.sql.translate({
         body: {

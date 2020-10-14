@@ -84,24 +84,43 @@ async function getVesselByIdV1Validation(ctx, next) {
   await next();
 }
 
-const schemaVesselSearchV1 = Joi.object({
-  offset: Joi.number().default(vesselDefault.offset),
-  limit: Joi.number().default(vesselDefault.limit),
-  datasets: Joi.string().required(),
+const schemaSearchVesselsV1 = Joi.object({
+  limit: Joi.number()
+    .integer()
+    .min(1)
+    .max(25)
+    .default(vesselDefault.limit),
   query: Joi.string().required(),
+  binary: Joi.boolean().default(vesselDefault.binary),
+  suggestField: Joi.string().default(vesselDefault.suggestField),
+  queryFields: Joi.string().default(vesselDefault.queryFields),
+  querySuggestions: Joi.boolean().default(vesselDefault.querySuggestions),
+  offset: Joi.number()
+    .integer()
+    .min(0)
+    .default(vesselDefault.offset),
+  datasets: Joi.string().required(),
 });
-async function vesselSearchV1Validation(ctx, next) {
+async function searchVesselsV1Validation(ctx, next) {
   try {
-    const value = await schemaVesselSearchV1.validateAsync(ctx.request.query);
+    const value = await schemaSearchVesselsV1.validateAsync(ctx.request.query);
+
     Object.keys(value).forEach(k => {
       ctx.query[k] = value[k];
     });
-    if (ctx.query.datasets) {
-      ctx.query.datasets = splitDatasets(ctx.query.datasets)
+    if (ctx.query.queryFields && !Array.isArray(ctx.query.queryFields)) {
+      ctx.query.queryFields = ctx.query.queryFields.split(',');
     }
   } catch (err) {
     throw new UnprocessableEntityException('Invalid query', err.details);
   }
+
+  if (ctx.query.datasets) {
+    ctx.query.datasets = ctx.query.datasets
+      .split(',')
+      .map(d => (d.indexOf(':') === -1 ? `${d}:latest` : d));
+  }
+
   await next();
 }
 
@@ -156,6 +175,6 @@ async function advanceSearchSqlValidation(ctx, next) {
 module.exports = {
   getAllVesselsV1Validation,
   getVesselByIdV1Validation,
-  vesselSearchV1Validation,
+  searchVesselsV1Validation,
   advanceSearchSqlValidation,
 };

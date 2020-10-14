@@ -54,7 +54,6 @@ async function getVesselByIdV1Validation(ctx, next) {
   await next();
 }
 
-
 async function searchVesselsV1Validation(ctx, next) {
   try {
     await validateSchema(ctx, schemaSearchVesselsV1)
@@ -70,8 +69,12 @@ async function searchVesselsV1Validation(ctx, next) {
   await next();
 }
 
-// Advance search SQL validation
 function validateFields(where, fields) {
+
+  if (Array.isArray(where)) {
+    where.forEach((condition) => validateFields(condition, fields));
+    return;
+  }
 
   if (!where || typeof where === 'string') {
     throw new UnprocessableEntityException('Invalid Query: ', {
@@ -80,24 +83,20 @@ function validateFields(where, fields) {
     })
   }
 
-  if (Array.isArray(where)) {
-    where.forEach((condition) => validateFields(condition, fields));
-    return;
-  }
-
   Object.keys(where).forEach((k) => {
     if (k.toLowerCase() === 'and' || k.toLowerCase() === 'or') {
       validateFields(where[k], fields);
       return;
     }
-
     if (Array.isArray(where[k]) && !where[k].some((c) => fields.indexOf(c) >= 0)) {
       throw new UnprocessableEntityException('Invalid Query: ', {
         message: `The column "${where[k][0].toUpperCase()}" is not supported to search. Supported columns: "${fields.map(f => f.toUpperCase())}"`,
         path: ['query'],
       })
     }
-    validateFields(where[k], fields);
+    if (!Array.isArray(where[k])) {
+      validateFields(where[k], fields);
+    }
   });
 
 }
@@ -107,7 +106,7 @@ async function advanceSearchSqlValidation(ctx, next) {
     const parser = new SqlWhereParser();
     const whereParsed = parser.parse(removeWhitespace(sql));
     validateFields(whereParsed, [IMO, MMSI, SHIPNAME, VESSEL_ID, FLAG, CALLSIGN]);
-    ctx.query.query.sql = sql;
+    ctx.query.query = removeWhitespace(sql);
   } catch (err) {
     throw new UnprocessableEntityException('Invalid Query: ', {
       message: `Query malformed, remember to exclude where and use correct syntax.`,

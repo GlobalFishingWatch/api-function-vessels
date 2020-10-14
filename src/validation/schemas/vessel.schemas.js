@@ -1,5 +1,5 @@
 const Joi = require('@hapi/joi');
-const { VESSELS_CONSTANTS: { DEFAULT_PROPERTY_SUGGEST } } = require('../constant');
+const { VESSELS_CONSTANTS: { DEFAULT_PROPERTY_SUGGEST } } = require('../../constant');
 
 const vesselDefault = {
   offset: 0,

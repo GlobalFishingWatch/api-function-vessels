@@ -486,8 +486,8 @@ paths:
           description: |
             List of vessel id to get these vessels. The ids must be separated by comma.
           required: false
-            schema:
-              type: string
+          schema:
+            type: string
         - name: query
           in: query
           description: |

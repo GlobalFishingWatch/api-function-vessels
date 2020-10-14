@@ -466,11 +466,9 @@ paths:
   '/v1/vessels':
     get:
       summary: |
-        Searches for vessels
+        List vessels
       description: |
-        Searches for a vessel given a free form query. The query will be matched against any identifiers for the vessel,
-        and a paginated, ranked results list will be returned. Query and Ids are required depends on the case.
-        If you use query as parameter then you must not use ids and vice-versa.
+        Lists vessels given a list of vessels id.
       tags:
         - VesselsAPI
       parameters:
@@ -485,14 +483,60 @@ paths:
           in: query
           description: |
             List of vessel id to get these vessels. The ids must be separated by comma.
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: |
+            Amount of search results to return. Maximum 25.
           required: false
-            schema:
-              type: string
+          schema:
+            type: integer
+            maximum: 25
+            default: 10
+        - name: offset
+          in: query
+          description: |
+            Offset into the search results, used for pagination.
+          required: false
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: |
+            Expected response to a successful request.
+        '401':
+          description: Unauthorized, either the api key is invalid or expired.
+        '400':
+          description: Bad request. Invalid or wrong parameters were provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  '/v1/vessels/search':
+    get:
+      summary: |
+        Search vessels
+      description: |
+        Searches for a vessel given a free form query. The query will be matched against any identifiers for the vessel, and a paginated, ranked results list will be returned.
+      tags:
+        - VesselsAPI
+      parameters:
+        - name: datasets
+          in: query
+          description: |
+            Dataset to query vessels from
+          required: true
+          schema:
+            type: string
         - name: query
           in: query
           description: |
             Search query.
-          required: false
+          required: true
           schema:
             type: string
         - name: queryFields
@@ -511,6 +555,60 @@ paths:
             type: string
             enum: [ shipname, imo, mmsi, flag ]
             default: shipname
+        - name: limit
+          in: query
+          description: |
+            Amount of search results to return. Maximum 25.
+          required: false
+          schema:
+            type: integer
+            maximum: 25
+            default: 10
+        - name: offset
+          in: query
+          description: |
+            Offset into the search results, used for pagination.
+          required: false
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: |
+            Expected response to a successful request.
+        '401':
+          description: Unauthorized, either the api key is invalid or expired.
+        '400':
+          description: Bad request. Invalid or wrong parameters were provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  '/v1/vessels/advanced-search':
+    get:
+      summary: |
+        Search vessels
+      description: |
+        Searches for a vessel given a query (SQL syntax).
+      tags:
+        - VesselsAPI
+      parameters:
+        - name: datasets
+          in: query
+          description: |
+            Dataset to query vessels from
+          required: true
+          schema:
+            type: string
+        - name: query
+          in: query
+          description: |
+            Search query.
+          required: false
+          schema:
+            type: string
+          example: shipname LIKE 'GUAP%' and mmsi = '265555280'
         - name: limit
           in: query
           description: |

@@ -24,42 +24,26 @@ const vesselDefault = {
   binary: false,
 };
 
-const mainSchemaVesselV1 = {
+const schemaGetAllVesselsV1 = Joi.object({
   limit: Joi.number()
     .integer()
     .min(1)
     .max(25)
     .default(vesselDefault.limit),
-  binary: Joi.boolean().default(vesselDefault.binary),
-  suggestField: Joi.string().default(vesselDefault.suggestField),
-  queryFields: Joi.string().default(vesselDefault.queryFields),
-  querySuggestions: Joi.boolean().default(vesselDefault.querySuggestions),
+    binary: Joi.boolean().default(vesselDefault.binary),
+  ids: Joi.string().required(),
   offset: Joi.number()
-    .integer()
-    .min(0)
-    .default(vesselDefault.offset),
+  .integer()
+  .min(0)
+  .default(vesselDefault.offset),
   datasets: Joi.string().required(),
-};
-const schemaVesselV1 = Joi.alternatives().try(
-  Joi.object().keys({
-    ...mainSchemaVesselV1,
-    query: Joi.string().required(),
-  }),
-  Joi.object().keys({
-    ...mainSchemaVesselV1,
-    ids: Joi.string().required(),
-  }),
-);
-async function vesselV1Validation(ctx, next) {
+});
+async function getAllVesselsV1Validation(ctx, next) {
   try {
-    const value = await schemaVesselV1.validateAsync(ctx.request.query);
-
+    const value = await schemaGetAllVesselsV1.validateAsync(ctx.request.query);
     Object.keys(value).forEach(k => {
       ctx.query[k] = value[k];
     });
-    if (ctx.query.queryFields && !Array.isArray(ctx.query.queryFields)) {
-      ctx.query.queryFields = ctx.query.queryFields.split(',');
-    }
     if (ctx.query.ids && !Array.isArray(ctx.query.ids)) {
       ctx.query.ids = ctx.query.ids.split(',');
     }
@@ -170,7 +154,7 @@ async function advanceSearchSqlValidation(ctx, next) {
 }
 
 module.exports = {
-  vesselV1Validation,
+  getAllVesselsV1Validation,
   vesselIdV1Validation,
   vesselSearchV1Validation,
   advanceSearchSqlValidation,

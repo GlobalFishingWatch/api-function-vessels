@@ -70,6 +70,18 @@ const calculateNextOffset = (query, results) =>
     ? query.offset + query.limit
     : null;
 
+
+const transformGetAllVesselsResults = ({ query, source }) => results => {
+  const { body } = results;
+  return {
+    total: body.docs.length,
+    limit: query.limit,
+    offset: query.offset,
+    nextOffset: calculateNextOffset(query, { hits: { total: { value: body.docs.length } } }),
+    entries: body.docs.map(transformSearchResult(source)),
+  };
+};
+
 const transformSearchResults = ({ query, source, includeMetadata }) => results => {
   const { body } = results;
   return {
@@ -179,6 +191,19 @@ module.exports = source => {
   log.debug(`Searching in elasticsearch index ${index}`);
 
   return {
+
+    async getAllVessels(query) {
+      const multiQueries = query.ids.map(id => {
+        return {
+          _index: index,
+          _id: id,
+        };
+      })
+      const elasticSearchQuery = { body: { docs: multiQueries } };
+      return elasticsearch.mget(elasticSearchQuery)
+        .then(transformGetAllVesselsResults({ query, source }))
+    },
+
     async search(query) {
       const elasticSearchQuery = {
         index,

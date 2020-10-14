@@ -57,13 +57,13 @@ async function getAllVesselsV1Validation(ctx, next) {
   await next();
 }
 
-const schemaVesselDatasetV1 = Joi.object({
+const schemaGetVesselByIdV1 = Joi.object({
   binary: Joi.boolean().default(false),
   datasets: Joi.string().required(),
 });
-async function vesselIdV1Validation(ctx, next) {
+async function getVesselByIdV1Validation(ctx, next) {
   try {
-    const value = await schemaVesselDatasetV1.validateAsync(ctx.request.query);
+    const value = await schemaGetVesselByIdV1.validateAsync(ctx.request.query);
     Object.keys(value).forEach(k => {
       ctx.query[k] = value[k];
     });
@@ -155,7 +155,7 @@ async function advanceSearchSqlValidation(ctx, next) {
 
 module.exports = {
   getAllVesselsV1Validation,
-  vesselIdV1Validation,
+  getVesselByIdV1Validation,
   vesselSearchV1Validation,
   advanceSearchSqlValidation,
 };

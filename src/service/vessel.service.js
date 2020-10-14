@@ -1,18 +1,18 @@
 /* eslint-disable no-underscore-dangle */
+const {
+  errors: { UnprocessableEntityException },
+} = require('auth-middleware');
 const elasticsearch = require('../db/elasticsearch');
 const log = require('../log');
 const { parseSqlToElasticSearchQuery } = require('../parser/sql-parser');
 const { VESSELS_CONSTANTS: { IMO, MMSI, SHIPNAME, FLAG, VESSEL_ID, QUERY_TYPES } } = require('../constant');
 const { sanitizeSQL } = require('../utils/sanitize-sql');
-const {
-  errors: { UnprocessableEntityException },
-} = require('auth-middleware');
 
-const transformSearchResult = source => entry => {
+const transformSource = source => result => {
+  const entry = result.body ? result.body : result;
   const baseFields = source.tileset
     ? { tilesetId: source.tileset }
     : { dataset: source.dataset.name };
-
   const {
     firstTimestamp: firstTransmissionDate,
     lastTimestamp: lastTransmissionDate,
@@ -78,7 +78,7 @@ const transformGetAllVesselsResults = ({ query, source }) => results => {
     limit: query.limit,
     offset: query.offset,
     nextOffset: calculateNextOffset(query, { hits: { total: { value: body.docs.length } } }),
-    entries: body.docs.map(transformSearchResult(source)),
+    entries: body.docs.map(transformSource(source)),
   };
 };
 
@@ -90,7 +90,7 @@ const transformSearchResults = ({ query, source, includeMetadata }) => results =
     limit: query.limit,
     offset: query.offset,
     nextOffset: calculateNextOffset(query, body),
-    entries: body.hits.hits.map(transformSearchResult(source)),
+    entries: body.hits.hits.map(transformSource(source)),
     metadata: includeMetadata && includeMetadata === true && body.suggest ?
       { suggestion: transformSuggestResult(body.suggest.searchSuggest, query.query) }
       : undefined,
@@ -102,7 +102,7 @@ const transformSuggestionsResults = ({
                                        source,
                                      }) => suggestionResults => {
   const suggestionResultsTransformed = suggestionResults.hits.hits.map(
-    transformSearchResult(source),
+    transformSource(source),
   );
   if (!results.length) return suggestionResultsTransformed;
 
@@ -290,29 +290,12 @@ module.exports = source => {
         .then(transformSearchResults({ query, source, includeMetadata: true }))
     },
 
-    async get(vesselId) {
-      const query = {
+    async getOneById(id) {
+      return elasticsearch.get({
         index,
-        size: 1,
-        body: {
-          query: {
-            query_string: {
-              query: vesselId,
-              fields: [VESSEL_ID]
-            }
-          }
-        }
-      }
-      const { body: { hits: { hits: vessels } } } = await elasticsearch.search(query);
-      if (!vessels[0]) {
-        return null;
-      }
-      const { _source: vesselInfo } = vessels[0];
-      if (vesselInfo.id !== vesselId){
-        return null;
-      }
+        id,
+      }).then(transformSource(source))
 
-      return (transformSearchResult(source)(vessels[0]))
     },
   };
 };

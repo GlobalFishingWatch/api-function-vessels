@@ -5,6 +5,7 @@ module.exports = {
     MMSI: 'mmsi',
     SHIPNAME: 'shipname',
     FLAG: 'flag',
+    CALLSIGN: 'callsign',
     VESSEL_ID: 'id',
     QUERY_TYPES: {
       PHRASE: 'phrase',

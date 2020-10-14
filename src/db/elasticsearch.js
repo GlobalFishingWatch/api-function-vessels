@@ -1,7 +1,6 @@
-const { Client } = require('elasticsearch');
+const { Client } = require('@elastic/elasticsearch')
 const config = require('../config');
 
 module.exports = new Client({
-  host: config.elasticsearch.server,
-  apiVersion: '7.x',
+  node: config.elasticsearch.server,
 });

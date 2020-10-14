@@ -11,7 +11,7 @@ const errors = require('./middleware/errors.middleware');
 
 const cacheRouter = require('./route/cache.route');
 const datasetRouter = require('./route/dataset.route');
-const datasetV1Router = require('./route/dataset-v1.route');
+const datasetV1Router = require('./route/vessel-v1.route');
 const tilesetRouter = require('./route/tileset.route');
 const tracksRouter = require('./route/tracks.route');
 const tracksV1Router = require('./route/tracks-v1.route');

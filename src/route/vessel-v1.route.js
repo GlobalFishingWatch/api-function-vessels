@@ -8,9 +8,9 @@ const vesselService = require('../service/vessel.service');
 const loadDatasetQueryMiddleware = require('../middleware/load-dataset-query.middleware');
 const log = require('../log');
 const {
-  vesselV1Validation,
-  vesselIdV1Validation,
-  vesselSearchV1Validation,
+  getAllVesselsV1Validation,
+  getVesselByIdV1Validation,
+  searchVesselsV1Validation,
   advanceSearchSqlValidation,
 } = require('../validation/vessel.validation');
 const encodeService = require('../service/encode.service');
@@ -18,38 +18,41 @@ const { redis } = require('../middleware/caching.middleware');
 
 class VesselRouter {
 
-  static async getVesselsUsingAdvanceSearch(ctx) {
-    log.info('Searching vessels using advance search');
+  static async getAllVessels(ctx) {
 
     const query = {
       limit: ctx.query.limit,
       offset: ctx.query.offset,
-      query: ctx.query.query,
+      ids: ctx.query.ids,
     };
+    log.info(`Getting vessels with ids: ${query.ids}`);
 
     const results = await Promise.all(
       ctx.state.datasets.map(async dataset => {
         const result = await vesselService({
           dataset,
           version: ctx.state.datasetVersion,
-        }).advanceSearch(query);
+        }).getAllVessels(query);
+        log.info(`Dataset: ${dataset.id}, Returning ${result.entries.length} / ${result.total} results`);
         return { dataset: dataset.id, results: result };
-      })
-    )
-    await encodeService(ctx, 'DatasetVesselInfo', ctx.query.binary)(results);
+      }),
+    );
+
+    ctx.state.cacheTags = [`dataset`, `dataset-${ctx.params.dataset}`];
+    await encodeService(ctx, 'DatasetVesselV1Query', ctx.query.binary)(results);
   }
 
-  static async getAllVessels(ctx) {
+  static async getVesselsUsingSearch(ctx) {
+    log.info('Searching vessels using search');
+
     const query = {
       limit: ctx.query.limit,
       offset: ctx.query.offset,
       query: ctx.query.query,
-      ids: ctx.query.ids,
       queryFields: ctx.query.queryFields,
       suggestField: ctx.query.suggestField,
       querySuggestions: ctx.query.querySuggestions,
     };
-    log.debug('Querying vessels search index');
 
     const results = await Promise.all(
       ctx.state.datasets.map(async dataset => {
@@ -57,14 +60,33 @@ class VesselRouter {
           dataset,
           version: ctx.state.datasetVersion,
         }).searchWithSuggest(query);
+        log.info(`Dataset: ${dataset.id}, Returning ${result.entries.length} / ${result.total} results`);
         return { dataset: dataset.id, results: result };
-      }),
-    );
+      })
+    )
+    await encodeService(ctx, 'DatasetVesselInfo', ctx.query.binary)(results);
+  }
 
-    log.debug(`Returning ${results.entries.length} / ${results.total} results`);
-    ctx.state.cacheTags = [`dataset`, `dataset-${ctx.params.dataset}`];
+  static async getVesselsUsingAdvanceSearch(ctx) {
 
-    await encodeService(ctx, 'DatasetVesselV1Query', ctx.query.binary)(results);
+    const query = {
+      limit: ctx.query.limit,
+      offset: ctx.query.offset,
+      query: ctx.query.query,
+    };
+    log.info(`Searching vessels using advance with query ${query.query}`);
+
+    const results = await Promise.all(
+      ctx.state.datasets.map(async dataset => {
+        const result = await vesselService({
+          dataset,
+          version: ctx.state.datasetVersion,
+        }).advanceSearch(query);
+        log.info(`Dataset: ${dataset.id}, Returning ${result.entries.length} / ${result.total} results`);
+        return { dataset: dataset.id, results: result };
+      })
+    )
+    await encodeService(ctx, 'DatasetVesselInfo', ctx.query.binary)(results);
   }
 
   static async getVesselById(ctx) {
@@ -75,7 +97,7 @@ class VesselRouter {
       const result = await vesselService({
         dataset,
         version: ctx.state.datasetVersion,
-      }).get(vesselId);
+      }).getOneById(vesselId);
 
       if (!result) {
         throw new NotFoundException();
@@ -109,7 +131,7 @@ router.get(
     { action: 'read', type: 'dataset', valueQueryParam: 'datasets' },
   ]),
   redis([]),
-  vesselV1Validation,
+  getAllVesselsV1Validation,
   loadDatasetQueryMiddleware('v1'),
   checkDatasetTypeMiddleware('carriers-vessels'),
   VesselRouter.getAllVessels,
@@ -121,7 +143,19 @@ router.get(
     { action: 'read', type: 'dataset', valueQueryParam: 'datasets' },
   ]),
   redis([]),
-  vesselSearchV1Validation,
+  searchVesselsV1Validation,
+  loadDatasetQueryMiddleware('v1'),
+  checkDatasetTypeMiddleware('carriers-vessels'),
+  VesselRouter.getVesselsUsingSearch,
+);
+
+router.get(
+  '/vessels/advanced-search',
+  koa.checkPermissionsWithRequestParams([
+    { action: 'read', type: 'dataset', valueQueryParam: 'datasets' },
+  ]),
+  redis([]),
+  searchVesselsV1Validation,
   advanceSearchSqlValidation,
   loadDatasetQueryMiddleware('v1'),
   checkDatasetTypeMiddleware('carriers-vessels'),
@@ -134,7 +168,7 @@ router.get(
     { action: 'read', type: 'dataset', valueQueryParam: 'datasets' },
   ]),
   redis([]),
-  vesselIdV1Validation,
+  getVesselByIdV1Validation,
   loadDatasetQueryMiddleware('v1'),
   checkDatasetTypeMiddleware('carriers-vessels'),
   VesselRouter.getVesselById,

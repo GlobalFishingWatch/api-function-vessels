@@ -52,7 +52,6 @@ class VesselRouter {
       query: ctx.query.query,
       queryFields: ctx.query.queryFields,
       suggestField: ctx.query.suggestField,
-      querySuggestions: ctx.query.querySuggestions,
     };
 
     const results = await Promise.all(

@@ -503,6 +503,14 @@ paths:
           schema:
             type: integer
             default: 0
+        - name: binary
+          in: query
+          description: |
+            Return data in binary format.
+          required: false
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           description: |
@@ -572,6 +580,14 @@ paths:
           schema:
             type: integer
             default: 0
+        - name: binary
+          in: query
+          description: |
+            Return data in binary format.
+          required: false
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           description: |
@@ -626,6 +642,14 @@ paths:
           schema:
             type: integer
             default: 0
+        - name: binary
+          in: query
+          description: |
+            Return data in binary format.
+          required: false
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           description: |
@@ -662,6 +686,14 @@ paths:
           required: true
           schema:
             type: string
+        - name: binary
+          in: query
+          description: |
+            Return data in binary format.
+          required: false
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           description: |

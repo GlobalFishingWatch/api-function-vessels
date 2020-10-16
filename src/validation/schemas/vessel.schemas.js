@@ -48,8 +48,24 @@ const schemaSearchVesselsV1 = Joi.object({
   datasets: Joi.string().required(),
 });
 
+const schemaAdvancedSearchVesselsV1 = Joi.object({
+  query: Joi.string().required(),
+  datasets: Joi.string().required(),
+  binary: Joi.boolean().default(vesselDefault.binary),
+  offset: Joi.number()
+    .integer()
+    .min(0)
+    .default(vesselDefault.offset),
+  limit: Joi.number()
+    .integer()
+    .min(1)
+    .max(25)
+    .default(vesselDefault.limit),
+});
+
 module.exports= {
   schemaGetAllVesselsV1,
   schemaGetVesselByIdV1,
-  schemaSearchVesselsV1
+  schemaSearchVesselsV1,
+  schemaAdvancedSearchVesselsV1,
 }

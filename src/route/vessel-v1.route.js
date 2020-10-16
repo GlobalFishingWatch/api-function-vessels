@@ -11,7 +11,8 @@ const {
   getAllVesselsV1Validation,
   getVesselByIdV1Validation,
   searchVesselsV1Validation,
-  advanceSearchSqlValidation,
+  advancedSearchSqlValidation,
+  advancedSearchVesselsV1Validation
 } = require('../validation/vessel.validation');
 const encodeService = require('../service/encode.service');
 const { redis } = require('../middleware/caching.middleware');
@@ -155,8 +156,8 @@ router.get(
     { action: 'read', type: 'dataset', valueQueryParam: 'datasets' },
   ]),
   redis([]),
-  searchVesselsV1Validation,
-  advanceSearchSqlValidation,
+  advancedSearchVesselsV1Validation,
+  advancedSearchSqlValidation,
   loadDatasetQueryMiddleware('v1'),
   checkDatasetTypeMiddleware('carriers-vessels'),
   VesselRouter.getVesselsUsingAdvanceSearch,

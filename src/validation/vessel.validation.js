@@ -8,7 +8,8 @@ const { splitDatasets } = require('../utils/split-datasets');
 const {
   schemaGetAllVesselsV1,
   schemaGetVesselByIdV1,
-  schemaSearchVesselsV1
+  schemaSearchVesselsV1,
+  schemaAdvancedSearchVesselsV1
 } = require('./schemas/vessel.schemas');
 
 async function validateSchema(ctx, schema) {
@@ -100,7 +101,7 @@ function validateFields(where, fields) {
   });
 
 }
-async function advanceSearchSqlValidation(ctx, next) {
+async function advancedSearchSqlValidation(ctx, next) {
   try {
     const { query: { query: sql } } = ctx;
     const parser = new SqlWhereParser();
@@ -115,10 +116,22 @@ async function advanceSearchSqlValidation(ctx, next) {
   }
   await next()
 }
+async function advancedSearchVesselsV1Validation(ctx, next) {
+  try {
+    await validateSchema(ctx, schemaSearchVesselsV1)
+    if (ctx.query.datasets) {
+      ctx.query.datasets = splitDatasets(ctx.query.datasets);
+    }
+  } catch (err) {
+    throw new UnprocessableEntityException('Invalid query', err.details);
+  }
+  await next();
+}
 
 module.exports = {
   getAllVesselsV1Validation,
   getVesselByIdV1Validation,
   searchVesselsV1Validation,
-  advanceSearchSqlValidation,
+  advancedSearchSqlValidation,
+  advancedSearchVesselsV1Validation,
 };

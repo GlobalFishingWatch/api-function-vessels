@@ -38,7 +38,7 @@ class DatasetRouter {
     try {
       const { vesselId } = ctx.params;
       log.debug(`Looking up vessel information for vessel ${vesselId}`);
-      const result = await vesselService({ dataset: ctx.state.dataset }).get(
+      const result = await vesselService({ dataset: ctx.state.dataset }).getOneById(
         vesselId,
       );
 

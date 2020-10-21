@@ -89,7 +89,7 @@ const transformSuggestionsResults = ({
                                        results,
                                        source,
                                      }) => suggestionResults => {
-  const suggestionResultsTransformed = suggestionResults.hits.hits.map(
+  const suggestionResultsTransformed = suggestionResults.body.hits.hits.map(
     transformSource(source),
   );
   if (!results.length) return suggestionResultsTransformed;

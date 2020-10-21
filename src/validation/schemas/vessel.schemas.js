@@ -5,7 +5,6 @@ const vesselDefault = {
   offset: 0,
   queryFields: [],
   suggestField: DEFAULT_PROPERTY_SUGGEST,
-  querySuggestions: false,
   limit: 10,
   binary: false,
 };
@@ -40,7 +39,6 @@ const schemaSearchVesselsV1 = Joi.object({
   binary: Joi.boolean().default(vesselDefault.binary),
   suggestField: Joi.string().default(vesselDefault.suggestField),
   queryFields: Joi.string().default(vesselDefault.queryFields),
-  querySuggestions: Joi.boolean().default(vesselDefault.querySuggestions),
   offset: Joi.number()
     .integer()
     .min(0)

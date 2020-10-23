@@ -1,10 +1,10 @@
 const { getNamespace } = require('cls-hooked');
 
-const getTransactionId = (namespace) => {
+const getPropertyFromNamespace = (namespace, property) => {
   const myRequest = getNamespace(namespace);
-  return myRequest && myRequest.get('transactionId') ? myRequest.get('transactionId') : undefined;
+  return myRequest && myRequest.get(property) ? myRequest.get(property) : undefined;
 };
 
 module.exports = {
-  getTransactionId
+  getPropertyFromNamespace,
 }

@@ -1,4 +1,4 @@
-module.exports = {
+module.exports = Object.freeze({
   VESSELS_CONSTANTS: {
     DEFAULT_PROPERTY_SUGGEST: 'shipname',
     IMO: 'imo',
@@ -12,5 +12,10 @@ module.exports = {
       TOKENS: 'tokens',
       IDS: 'ids'
     }
+  },
+  TRANSACTION_ID: {
+    NAMESPACE: 'customRequest',
+    HEADER: 'transaction-id',
+    PROPERTY: 'transactionId',
   }
-}
+});

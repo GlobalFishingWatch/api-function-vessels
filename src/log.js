@@ -1,5 +1,8 @@
 const winston = require('winston');
 const config = require('./config');
+const { getPropertyFromNamespace } = require('./utils/get-property-from-namespace');
+const { name } = require('../package.json');
+const { TRANSACTION_ID: { NAMESPACE, PROPERTY } } = require('./constant');
 
 const level2severity = {
   emerg: 'EMERGENCY',
@@ -13,7 +16,12 @@ const level2severity = {
 };
 
 const severity = winston.format(info => {
-  return { ...info, severity: level2severity[info.level] };
+  return {
+    ...info,
+    serviceName: name,
+    transactionId: getPropertyFromNamespace(NAMESPACE, PROPERTY),
+    severity: level2severity[info.level]
+  };
 });
 
 module.exports = winston.createLogger({

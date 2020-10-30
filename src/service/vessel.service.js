@@ -3,7 +3,7 @@ const {
   errors: { UnprocessableEntityException },
 } = require('auth-middleware');
 const elasticsearch = require('../db/elasticsearch');
-const log = require('../log');
+const { log } = require('gfw-api-utils').logger;
 const { parseSqlToElasticSearchQuery } = require('../parser/sql-parser');
 const { VESSELS_CONSTANTS: { IMO, MMSI, SHIPNAME, FLAG, VESSEL_ID, QUERY_TYPES } } = require('../constant');
 const { removeWhitespace } = require('../utils/remove-whitespace');

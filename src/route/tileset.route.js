@@ -4,7 +4,7 @@ const {
   errors: { NotFoundException },
 } = require('auth-middleware');
 const vesselService = require('../service/vessel.service');
-const log = require('../log');
+const { log } = require('gfw-api-utils').logger;
 const {
   tilesetOfVesselIdValidation,
   tilesetValidation,

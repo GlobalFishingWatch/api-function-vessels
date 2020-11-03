@@ -10,8 +10,11 @@ const fields = [
   'lonlat',
   'timestamp',
   'night',
-  'elevation',
+  'elevation_n',
+  'distance_from_shore',
+  'distance_from_port',
   'encounter',
+  'fishing_hours',
 ];
 
 const schemaTracksV1 = Joi.object({
@@ -74,7 +77,7 @@ async function tracksV0Validation(ctx, next) {
 
   await next();
 }
-async function tracksV1Validation(ctx, next) {
+async function  tracksV1Validation(ctx, next) {
   let value;
   try {
     value = await schemaTracksV1.validateAsync(ctx.request.query);

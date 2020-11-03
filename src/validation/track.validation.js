@@ -10,7 +10,7 @@ const fields = [
   'lonlat',
   'timestamp',
   'night',
-  'elevation_n',
+  'elevation_m',
   'distance_from_shore',
   'distance_from_port',
   'encounter',

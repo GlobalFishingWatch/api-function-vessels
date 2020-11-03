@@ -108,6 +108,24 @@ const featureSettings = {
     formatterValueArray: value =>
       value !== undefined ? toFixedDown(value, 6) : nullValue,
   },
+  distance_from_shore: {
+    generateGeoJSONFeatures: () => [],
+    coordinateProperty: 'distance_from_shore',
+    property: 'distance_from_shore',
+    databaseField: 'distance_from_shore',
+    formatter: value => value,
+    formatterValueArray: value =>
+      value !== undefined ? toFixedDown(value, 6) : nullValue,
+  },
+  distance_from_port: {
+    generateGeoJSONFeatures: () => [],
+    coordinateProperty: 'distance_from_port',
+    property: 'distance_from_port',
+    databaseField: 'distance_from_port',
+    formatter: value => value,
+    formatterValueArray: value =>
+      value !== undefined ? toFixedDown(value, 6) : nullValue,
+  },
 };
 
 const optionalFilter = (value, filter) => (value ? filter : query => query);

@@ -10,11 +10,10 @@ const fields = [
   'lonlat',
   'timestamp',
   'night',
-  'elevation_m',
+  'elevation',
   'distance_from_shore',
   'distance_from_port',
   'encounter',
-  'fishing_hours',
 ];
 
 const schemaTracksV1 = Joi.object({

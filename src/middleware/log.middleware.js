@@ -1,5 +1,5 @@
 const url = require('url');
-const log = require('../log');
+const { log } = require('gfw-api-utils').logger;
 
 module.exports = {
   logger() {

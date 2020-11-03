@@ -6,7 +6,7 @@ const {
 const checkDatasetTypeMiddleware = require('../middleware/check-type-dataset.middleware');
 const vesselService = require('../service/vessel.service');
 const loadDatasetQueryMiddleware = require('../middleware/load-dataset-query.middleware');
-const log = require('../log');
+const { log } = require('gfw-api-utils').logger;
 const {
   getAllVesselsV1Validation,
   getVesselByIdV1Validation,

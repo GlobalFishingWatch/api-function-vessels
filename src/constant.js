@@ -13,9 +13,4 @@ module.exports = Object.freeze({
       IDS: 'ids'
     }
   },
-  TRANSACTION_ID: {
-    NAMESPACE: 'customRequest',
-    HEADER: 'transaction-id',
-    PROPERTY: 'transactionId',
-  }
 });

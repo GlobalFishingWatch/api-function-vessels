@@ -1,6 +1,6 @@
 const Knex = require('knex');
 const config = require('../config');
-const log = require('../log');
+const { log } = require('gfw-api-utils').logger;
 
 module.exports = new Knex({
   client: 'pg',

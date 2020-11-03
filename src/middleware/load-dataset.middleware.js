@@ -1,5 +1,5 @@
 const datasets = require('../service/dataset.service');
-const log = require('../log');
+const { log } = require('gfw-api-utils').logger;
 const {
   errors: { NotFoundException },
 } = require('auth-middleware');

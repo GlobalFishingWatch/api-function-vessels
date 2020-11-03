@@ -238,7 +238,7 @@ module.exports = ({
           sqlFishing.raw('lat'),
           ...additionalSelectFields,
         )
-        .from(`fishing`)
+        .from(`tracks`)
         .where('vessel_id', vesselId)
         .where('timestamp', '>=', startDate)
         .where('timestamp', '<=', endDate)

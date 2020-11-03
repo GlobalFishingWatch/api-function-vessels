@@ -4,9 +4,9 @@ const Logger = require('koa-logger');
 const Cors = require('@koa/cors');
 const { koa } = require('auth-middleware');
 const config = require('./config');
-const log = require('./log');
+const { log } = require('gfw-api-utils').logger;
+const { koaTransactionIdMiddleware } = require('gfw-api-utils').transactionId;
 const HelmetMiddleware = require('./middleware/helmet.middleware');
-const TransactionIdMiddleware = require('./middleware/transaction-id.middleware');
 const logMiddleware = require('./middleware/log.middleware');
 const errors = require('./middleware/errors.middleware');
 
@@ -25,7 +25,7 @@ if (process.env.NODE_ENV === 'development') {
 app.use(Cors());
 app.use(Body());
 app.use(HelmetMiddleware());
-app.use(TransactionIdMiddleware());
+app.use(koaTransactionIdMiddleware());
 app.use(errors.handleErrors);
 app.use(logMiddleware.logger());
 app.use(koa.health());

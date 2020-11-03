@@ -1,6 +1,6 @@
 const auth = require('koa-basic-auth');
 const Router = require('koa-router');
-const log = require('../log');
+const { log } = require('gfw-api-utils').logger;
 const config = require('../config');
 const redisCache = require('../db/redis');
 

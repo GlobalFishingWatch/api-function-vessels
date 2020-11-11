@@ -26,21 +26,44 @@ const THINNING_PARAMS = {
 };
 
 class TracksRouter {
-
   static getThinningFromQueryParams(query) {
     const thinningFromQuery = {};
-    if (query.distanceFishing) { thinningFromQuery.distanceFishing = query.distanceFishing; }
-    if (query.bearingValFishing) { thinningFromQuery.bearingValFishing = query.bearingValFishing; }
-    if (query.minAccuracyFishing) { thinningFromQuery.minAccuracyFishing = query.minAccuracyFishing; }
-    if (query.changeSpeedFishing) { thinningFromQuery.changeSpeedFishing = query.changeSpeedFishing; }
-    if (query.distanceCarriers) { thinningFromQuery.distanceCarriers = query.distanceCarriers; }
-    if (query.bearingValCarriers) { thinningFromQuery.bearingValCarriers = query.bearingValCarriers; }
-    if (query.minAccuracyCarriers) { thinningFromQuery.minAccuracyCarriers = query.minAccuracyCarriers; }
-    if (query.changeSpeedCarriers) { thinningFromQuery.changeSpeedCarriers = query.changeSpeedCarriers; }
-    if (query.distanceTransit) { thinningFromQuery.distanceTransit = query.distanceTransit; }
-    if (query.bearingValTransit) { thinningFromQuery.bearingValTransit = query.bearingValTransit; }
-    if (query.minAccuracyTransit) { thinningFromQuery.minAccuracyTransit = query.minAccuracyTransit; }
-    if (query.changeSpeedTransit) { thinningFromQuery.changeSpeedTransit = query.changeSpeedTransit; }
+    if (query.distanceFishing) {
+      thinningFromQuery.distanceFishing = query.distanceFishing;
+    }
+    if (query.bearingValFishing) {
+      thinningFromQuery.bearingValFishing = query.bearingValFishing;
+    }
+    if (query.minAccuracyFishing) {
+      thinningFromQuery.minAccuracyFishing = query.minAccuracyFishing;
+    }
+    if (query.changeSpeedFishing) {
+      thinningFromQuery.changeSpeedFishing = query.changeSpeedFishing;
+    }
+    if (query.distanceCarriers) {
+      thinningFromQuery.distanceCarriers = query.distanceCarriers;
+    }
+    if (query.bearingValCarriers) {
+      thinningFromQuery.bearingValCarriers = query.bearingValCarriers;
+    }
+    if (query.minAccuracyCarriers) {
+      thinningFromQuery.minAccuracyCarriers = query.minAccuracyCarriers;
+    }
+    if (query.changeSpeedCarriers) {
+      thinningFromQuery.changeSpeedCarriers = query.changeSpeedCarriers;
+    }
+    if (query.distanceTransit) {
+      thinningFromQuery.distanceTransit = query.distanceTransit;
+    }
+    if (query.bearingValTransit) {
+      thinningFromQuery.bearingValTransit = query.bearingValTransit;
+    }
+    if (query.minAccuracyTransit) {
+      thinningFromQuery.minAccuracyTransit = query.minAccuracyTransit;
+    }
+    if (query.changeSpeedTransit) {
+      thinningFromQuery.changeSpeedTransit = query.changeSpeedTransit;
+    }
     if (Object.keys(thinningFromQuery).length > 0) {
       return { ...THINNING_PARAMS, ...thinningFromQuery };
     }
@@ -71,9 +94,15 @@ class TracksRouter {
 
     log.debug(`Looking up track for vessel ${vesselId}`);
     let records;
-    if (dataset.id.indexOf('fishing') >= 0) {
+    if (
+      dataset.id.indexOf('fishing') >= 0 ||
+      dataset.id === 'tracks:v20190502'
+    ) {
       log.debug('Loading fishing tracks');
-      records = await trackLoader.loadFishing(vesselId);
+      records = await trackLoader.loadFishing(
+        vesselId,
+        dataset.configuration.table,
+      );
 
       if (!ctx.state.user) {
         log.debug('Thinning tracks');
@@ -83,7 +112,7 @@ class TracksRouter {
       records = await trackLoader.load(vesselId);
     }
 
-    const thinningParams = TracksRouter.getThinningFromQueryParams(ctx.query)
+    const thinningParams = TracksRouter.getThinningFromQueryParams(ctx.query);
     if (thinningParams !== null && ctx.state.user) {
       log.debug(`Applying custom thinning ${JSON.stringify(thinningParams)}`);
       records = await thinning(records, thinningParams);

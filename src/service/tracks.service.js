@@ -236,7 +236,7 @@ module.exports = ({
 
       return q;
     },
-    loadFishing(vesselId) {
+    loadFishing(vesselId, table) {
       const additionalSelectFields = features.map(
         feature => feature.databaseField,
       );
@@ -256,7 +256,7 @@ module.exports = ({
           sqlFishing.raw('lat'),
           ...additionalSelectFields,
         )
-        .from(`tracks`)
+        .from(table)
         .where('vessel_id', vesselId)
         .where('timestamp', '>=', startDate)
         .where('timestamp', '<=', endDate)

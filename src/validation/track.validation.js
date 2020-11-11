@@ -30,6 +30,18 @@ const schemaTracksV1 = Joi.object({
   fields: Joi.string(),
   wrapLongitudes: Joi.boolean().default(false),
   datasets: Joi.string().required(),
+  distanceFishing: Joi.number(),
+  bearingValFishing: Joi.number(),
+  minAccuracyFishing: Joi.number(),
+  changeSpeedFishing: Joi.number(),
+  distanceCarriers: Joi.number(),
+  bearingValCarriers: Joi.number(),
+  minAccuracyCarriers: Joi.number(),
+  changeSpeedCarriers: Joi.number(),
+  distanceTransit: Joi.number(),
+  bearingValTransit: Joi.number(),
+  minAccuracyTransit: Joi.number(),
+  changeSpeedTransit: Joi.number()
 });
 const schemaTracksV0 = Joi.object({
   startDate: Joi.date().iso(),

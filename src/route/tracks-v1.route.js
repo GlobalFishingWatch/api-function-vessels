@@ -86,7 +86,7 @@ class TracksRouter {
     const thinningParams = TracksRouter.getThinningFromQueryParams(ctx.query)
     if (thinningParams !== null && ctx.state.user) {
       log.debug(`Applying custom thinning ${JSON.stringify(thinningParams)}`);
-      records = await thinning(records, THINNING_PARAMS);
+      records = await thinning(records, thinningParams);
     }
 
     log.debug(`Converting the records to format ${format}`);

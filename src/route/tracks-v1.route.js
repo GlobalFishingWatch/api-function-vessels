@@ -26,6 +26,27 @@ const THINNING_PARAMS = {
 };
 
 class TracksRouter {
+
+  static getThinningFromQueryParams(query) {
+    const thinningFromQuery = {};
+    if (query.distanceFishing) { thinningFromQuery.distanceFishing = query.distanceFishing; }
+    if (query.bearingValFishing) { thinningFromQuery.bearingValFishing = query.bearingValFishing; }
+    if (query.minAccuracyFishing) { thinningFromQuery.minAccuracyFishing = query.minAccuracyFishing; }
+    if (query.changeSpeedFishing) { thinningFromQuery.changeSpeedFishing = query.changeSpeedFishing; }
+    if (query.distanceCarriers) { thinningFromQuery.distanceCarriers = query.distanceCarriers; }
+    if (query.bearingValCarriers) { thinningFromQuery.bearingValCarriers = query.bearingValCarriers; }
+    if (query.minAccuracyCarriers) { thinningFromQuery.minAccuracyCarriers = query.minAccuracyCarriers; }
+    if (query.changeSpeedCarriers) { thinningFromQuery.changeSpeedCarriers = query.changeSpeedCarriers; }
+    if (query.distanceTransit) { thinningFromQuery.distanceTransit = query.distanceTransit; }
+    if (query.bearingValTransit) { thinningFromQuery.bearingValTransit = query.bearingValTransit; }
+    if (query.minAccuracyTransit) { thinningFromQuery.minAccuracyTransit = query.minAccuracyTransit; }
+    if (query.changeSpeedTransit) { thinningFromQuery.changeSpeedTransit = query.changeSpeedTransit; }
+    if (Object.keys(thinningFromQuery).length > 0) {
+      return { ...THINNING_PARAMS, ...thinningFromQuery };
+    }
+    return null;
+  }
+
   static async getTracks(ctx) {
     const { vesselId } = ctx.params;
     const params = {
@@ -33,7 +54,6 @@ class TracksRouter {
       endDate: ctx.query.endDate,
       wrapLongitudes: ctx.query.wrapLongitudes,
     };
-
     const { format } = ctx.query;
     const { fields } = ctx.query;
     const { binary } = ctx.query;
@@ -61,6 +81,12 @@ class TracksRouter {
       }
     } else {
       records = await trackLoader.load(vesselId);
+    }
+
+    const thinningParams = TracksRouter.getThinningFromQueryParams(ctx.query)
+    if (thinningParams !== null && ctx.state.user) {
+      log.debug(`Applying custom thinning ${JSON.stringify(thinningParams)}`);
+      records = await thinning(records, THINNING_PARAMS);
     }
 
     log.debug(`Converting the records to format ${format}`);

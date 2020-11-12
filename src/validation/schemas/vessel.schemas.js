@@ -29,6 +29,10 @@ const schemaGetVesselByIdV1 = Joi.object({
   datasets: Joi.string().required(),
 });
 
+const schemaGetVesselSchemaV1 = Joi.object({
+  datasets: Joi.string().required(),
+});
+
 const schemaSearchVesselsV1 = Joi.object({
   limit: Joi.number()
     .integer()
@@ -64,6 +68,7 @@ const schemaAdvancedSearchVesselsV1 = Joi.object({
 module.exports= {
   schemaGetAllVesselsV1,
   schemaGetVesselByIdV1,
+  schemaGetVesselSchemaV1,
   schemaSearchVesselsV1,
   schemaAdvancedSearchVesselsV1,
 }

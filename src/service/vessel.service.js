@@ -5,6 +5,7 @@ const {
 const elasticsearch = require('../db/elasticsearch');
 const { log } = require('gfw-api-utils').logger;
 const { parseSqlToElasticSearchQuery } = require('../parser/sql-parser');
+const { mappingToSchema } = require('../parser/mapping-to-schema');
 const { VESSELS_CONSTANTS: { IMO, MMSI, SHIPNAME, FLAG, VESSEL_ID, QUERY_TYPES } } = require('../constant');
 const { removeWhitespace } = require('../utils/remove-whitespace');
 const { sanitizeSqlQuery } = require('../utils/sanitize-sql');
@@ -68,6 +69,13 @@ const transformGetAllVesselsResults = ({ query, source }) => results => {
     nextOffset: calculateNextOffset(query, { hits: { total: { value: body.docs.length } } }),
     entries: body.docs.map(transformSource(source)),
   };
+};
+
+const transformGetVesselSchemaResults = () => results => {
+  const { body } = results;
+  const indexNameFromES = Object.keys(body)[0];
+  const { mappings: { properties } } = body[indexNameFromES];
+  return mappingToSchema(properties);
 };
 
 const transformSearchResults = ({ query, source, includeMetadata }) => results => {
@@ -176,6 +184,12 @@ module.exports = source => {
       const elasticSearchQuery = { body: { docs: multiQueries } };
       return elasticsearch.mget(elasticSearchQuery)
         .then(transformGetAllVesselsResults({ query, source }))
+    },
+
+    async getVesselsSchema() {
+      log.info(`Getting mapping for index ${ index }`);
+      return elasticsearch.indices.getMapping({ index })
+        .then(transformGetVesselSchemaResults({ source }));
     },
 
     async search(query) {

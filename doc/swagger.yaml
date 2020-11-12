@@ -524,6 +524,35 @@ paths:
               schema:
                 $ref: '#/components/schemas/ValidationError'
 
+  '/v1/vessels/schema':
+    get:
+      summary: |
+        Obtains the schema of the vessel
+      description: |
+        Obtains the schema of the vessel for each dataset
+      tags:
+        - VesselsAPI
+      parameters:
+        - name: datasets
+          in: query
+          description: |
+            Dataset to query vessels from
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: |
+            Expected response to a successful request.
+        '401':
+          description: Unauthorized, either the api key is invalid or expired.
+        '400':
+          description: Bad request. Invalid or wrong parameters were provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
   '/v1/vessels/search':
     get:
       summary: |

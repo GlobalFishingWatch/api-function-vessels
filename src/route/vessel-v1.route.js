@@ -10,6 +10,7 @@ const { log } = require('gfw-api-utils').logger;
 const {
   getAllVesselsV1Validation,
   getVesselByIdV1Validation,
+  getVesselSchemaV1Validation,
   searchVesselsV1Validation,
   advancedSearchSqlValidation,
   advancedSearchVesselsV1Validation
@@ -39,6 +40,21 @@ class VesselRouter {
       }),
     );
 
+    ctx.state.cacheTags = [`dataset`, `dataset-${ctx.params.dataset}`];
+    await encodeService(ctx, 'DatasetVesselV1Query', ctx.query.binary)(results);
+  }
+
+  static async getVesselsSchema(ctx) {
+    log.info(`Getting vessel schema`);
+    const results = await Promise.all(
+      ctx.state.datasets.map(async dataset => {
+        const schema = await vesselService({
+          dataset,
+          version: ctx.state.datasetVersion,
+        }).getVesselsSchema();
+        return { dataset: dataset.id, result: schema, };
+      }),
+    );
     ctx.state.cacheTags = [`dataset`, `dataset-${ctx.params.dataset}`];
     await encodeService(ctx, 'DatasetVesselV1Query', ctx.query.binary)(results);
   }
@@ -135,6 +151,18 @@ router.get(
   loadDatasetQueryMiddleware('v1'),
   checkDatasetTypeMiddleware('carriers-vessels'),
   VesselRouter.getAllVessels,
+);
+
+router.get(
+  '/vessels/schema',
+  koa.checkPermissionsWithRequestParams([
+    { action: 'read', type: 'dataset', valueQueryParam: 'datasets' },
+  ]),
+  redis([]),
+  getVesselSchemaV1Validation,
+  loadDatasetQueryMiddleware('v1'),
+  checkDatasetTypeMiddleware('carriers-vessels'),
+  VesselRouter.getVesselsSchema,
 );
 
 router.get(

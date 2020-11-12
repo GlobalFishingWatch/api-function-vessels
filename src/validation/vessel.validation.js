@@ -8,6 +8,7 @@ const { splitDatasets } = require('../utils/split-datasets');
 const {
   schemaGetAllVesselsV1,
   schemaGetVesselByIdV1,
+  schemaGetVesselSchemaV1,
   schemaSearchVesselsV1,
   schemaAdvancedSearchVesselsV1
 } = require('./schemas/vessel.schemas');
@@ -51,6 +52,18 @@ async function getVesselByIdV1Validation(ctx, next) {
         },
       ]);
     }
+  }
+  await next();
+}
+
+async function getVesselSchemaV1Validation(ctx, next) {
+  try {
+    await validateSchema(ctx, schemaGetVesselSchemaV1)
+    if (ctx.query.datasets) {
+      ctx.query.datasets = splitDatasets(ctx.query.datasets);
+    }
+  } catch (err) {
+    throw new UnprocessableEntityException('Invalid request', err.details);
   }
   await next();
 }
@@ -118,7 +131,7 @@ async function advancedSearchSqlValidation(ctx, next) {
 }
 async function advancedSearchVesselsV1Validation(ctx, next) {
   try {
-    await validateSchema(ctx, schemaSearchVesselsV1)
+    await validateSchema(ctx, schemaAdvancedSearchVesselsV1)
     if (ctx.query.datasets) {
       ctx.query.datasets = splitDatasets(ctx.query.datasets);
     }
@@ -131,6 +144,7 @@ async function advancedSearchVesselsV1Validation(ctx, next) {
 module.exports = {
   getAllVesselsV1Validation,
   getVesselByIdV1Validation,
+  getVesselSchemaV1Validation,
   searchVesselsV1Validation,
   advancedSearchSqlValidation,
   advancedSearchVesselsV1Validation,

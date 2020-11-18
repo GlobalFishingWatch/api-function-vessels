@@ -179,6 +179,25 @@ module.exports = ({
 
       return flow(...filtersFromParams(params))(baseQuery);
     },
+    loadV1(vesselId) {
+      const additionalSelectFields = features.map(
+        feature => feature.databaseField,
+      );
+      const baseQuery = sqlFishing
+        .select(
+          'seg_id',
+          sql.raw('ST_X("position"::geometry) AS "lon"'),
+          sql.raw('ST_Y("position"::geometry) AS "lat"'),
+          ...additionalSelectFields,
+        )
+        .from(
+          version === 'v1' ? dataset.configuration.table : dataset.tracksTable,
+        )
+        .where('vessel_id', vesselId)
+        .orderBy(['seg_id', 'timestamp']);
+
+      return flow(...filtersFromParams(params))(baseQuery);
+    },
     loadCarriers(vesselId) {
       const additionalSelectFields = features.map(
         feature => feature.databaseField,

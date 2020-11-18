@@ -93,7 +93,7 @@ class TracksRouter {
     });
 
     log.debug(`Looking up track for vessel ${vesselId}`);
-    const records = await trackLoader.load(vesselId);
+    const records = await trackLoader.loadV1(vesselId);
 
     const thinningParams = TracksRouter.getThinningFromQueryParams(ctx.query);
     if (!ctx.state.user) {

@@ -93,7 +93,7 @@ class TracksRouter {
     });
 
     log.debug(`Looking up track for vessel ${vesselId}`);
-    const records = await trackLoader.loadV1(vesselId);
+    let records = await trackLoader.loadV1(vesselId);
 
     const thinningParams = TracksRouter.getThinningFromQueryParams(ctx.query);
     if (!ctx.state.user) {
@@ -134,10 +134,10 @@ router.use(koa.obtainUser(false));
 
 router.get(
   '/vessels/:vesselId/tracks',
-  koa.checkPermissionsWithRequestParams([
+  /*koa.checkPermissionsWithRequestParams([
     { action: 'read', type: 'dataset', valueQueryParam: 'datasets' },
   ]),
-  redis([]),
+  redis([]),*/
   tracksV1Validation,
   loadDatasetQueryMiddleware('v1'),
   checkDatasetTypeMiddleware('carriers-tracks'),

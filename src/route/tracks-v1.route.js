@@ -93,27 +93,13 @@ class TracksRouter {
     });
 
     log.debug(`Looking up track for vessel ${vesselId}`);
-    let records;
-    if (
-      dataset.id.indexOf('fishing') >= 0 ||
-      dataset.id === 'tracks:v20190502'
-    ) {
-      log.debug('Loading fishing tracks');
-      records = await trackLoader.loadFishing(
-        vesselId,
-        dataset.configuration.table,
-      );
-
-      if (!ctx.state.user) {
-        log.debug('Thinning tracks');
-        records = thinning(records, THINNING_PARAMS);
-      }
-    } else {
-      records = await trackLoader.load(vesselId);
-    }
+    const records = await trackLoader.load(vesselId);
 
     const thinningParams = TracksRouter.getThinningFromQueryParams(ctx.query);
-    if (thinningParams !== null && ctx.state.user) {
+    if (!ctx.state.user) {
+      log.debug('Thinning tracks');
+      records = thinning(records, THINNING_PARAMS);
+    } else if(thinningParams !== null && ctx.state.user) {
       log.debug(`Applying custom thinning ${JSON.stringify(thinningParams)}`);
       records = await thinning(records, thinningParams);
     }

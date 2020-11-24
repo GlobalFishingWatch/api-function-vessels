@@ -75,9 +75,6 @@ const calculateNextOffset = (query, results) =>
 
 const transformGetAllVesselsResults = ({ query, source }) => results => {
   const { body } = results;
-
-  // const foundIds = body.docs.filter(el => el.found === true);
-
   return {
     total: body.docs.length,
     limit: query.limit,

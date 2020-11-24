@@ -30,6 +30,19 @@ const transformSource = source => result => {
   };
 };
 
+const transformSourceV1 = source => result => {
+  const entry = result.body ? result.body : result;
+  const baseFields = source.tileset
+    ? { tilesetId: source.tileset }
+    : { dataset: source.dataset.id };
+
+  return {
+    id: entry._id,
+    ...entry._source,
+    ...baseFields,
+  };
+}
+
 const transformSuggestResult = (suggests, query) => {
   const suggestion = suggests
     .map(it => it.options.length ? it.options[0].text : it.text)
@@ -62,12 +75,19 @@ const calculateNextOffset = (query, results) =>
 
 const transformGetAllVesselsResults = ({ query, source }) => results => {
   const { body } = results;
+
+  // const foundIds = body.docs.filter(el => el.found === true);
+
   return {
     total: body.docs.length,
     limit: query.limit,
     offset: query.offset,
     nextOffset: calculateNextOffset(query, { hits: { total: { value: body.docs.length } } }),
-    entries: body.docs.map(transformSource(source)),
+    entries: body.docs.map(doc => {
+      return source.version === 'v1'
+        ?  transformSourceV1(source)(doc)
+        : transformSource(source)(doc);
+    }),
   };
 };
 

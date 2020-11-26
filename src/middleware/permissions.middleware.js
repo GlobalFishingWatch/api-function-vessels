@@ -1,4 +1,4 @@
-const log = require('../log');
+const { log } = require('gfw-api-utils').logger;
 const {
   koa: { request, checkPermissions },
 } = require('auth-middleware');

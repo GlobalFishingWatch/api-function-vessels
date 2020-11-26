@@ -3,18 +3,18 @@ const {
 } = require('auth-middleware');
 
 module.exports = {
-  async get(ctx, id) {
+  async get(ctx, id, version) {
     const response = await request(ctx, {
-      uri: `/datasets/${id}`,
+      uri: `${version === 'v1' ? '/v1' : ''}/datasets/${id}`,
       json: true,
     });
 
     return response;
   },
 
-  async getMultiple(ctx, ids) {
+  async getMultiple(ctx, ids, version) {
     const response = await request(ctx, {
-      uri: `/datasets?ids=${ids.join(',')}`,
+      uri: `${version === 'v1' ? '/v1' : ''}/datasets?ids=${ids.join(',')}`,
       json: true,
     });
     return response;

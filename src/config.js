@@ -104,5 +104,31 @@ module.exports = greenpeace.sanitizeEnvironment(environments, {
         required: true,
       }),
     },
+    sqlFishing: {
+      user: greenpeace.entry({
+        key: 'GCLOUD_SQLFISHING_USER',
+        doc: 'Google Cloud SQL username',
+        defaults: { test: 'dummy' },
+        required: true,
+      }),
+      password: greenpeace.entry({
+        key: 'GCLOUD_SQLFISHING_PASSWORD',
+        doc: 'Google Cloud SQL password',
+        defaults: { test: 'dummy' },
+        required: true,
+      }),
+      db: greenpeace.entry({
+        key: 'GCLOUD_SQLFISHING_DB',
+        doc: 'Google Cloud SQL database to connect to',
+        defaults: { test: 'dummy' },
+        required: true,
+      }),
+      instance: greenpeace.entry({
+        key: 'GCLOUD_SQLFISHING_INSTANCE',
+        doc: 'Google Cloud SQL instance to connect to',
+        defaults: { test: 'dummy' },
+        required: true,
+      }),
+    },
   },
 });

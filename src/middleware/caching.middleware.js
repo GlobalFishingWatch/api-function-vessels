@@ -2,7 +2,7 @@ const zlib = require('zlib');
 const UrlPattern = require('url-pattern');
 const redisCache = require('../db/redis');
 const config = require('../config');
-const log = require('../log');
+const { log } = require('gfw-api-utils').logger;
 
 module.exports = {
   withStaticTTL(ttl) {

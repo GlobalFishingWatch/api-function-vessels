@@ -6,10 +6,10 @@ const {
 
 const vesselService = require('../service/vessel.service');
 const loadDatasetMiddleware = require('../middleware/load-dataset.middleware');
-const log = require('../log');
+const { log } = require('gfw-api-utils').logger;
 const {
-  datasetValidation,
-  datasetOfVesselIdValidation,
+  datasetV0Validation,
+  datasetOfVesselIdV0Validation,
 } = require('../validation/dataset.validation');
 const encodeService = require('../service/encode.service');
 const { redis } = require('../middleware/caching.middleware');
@@ -38,7 +38,7 @@ class DatasetRouter {
     try {
       const { vesselId } = ctx.params;
       log.debug(`Looking up vessel information for vessel ${vesselId}`);
-      const result = await vesselService({ dataset: ctx.state.dataset }).get(
+      const result = await vesselService({ dataset: ctx.state.dataset }).getOneById(
         vesselId,
       );
 
@@ -70,8 +70,8 @@ router.get(
     { action: 'read', type: 'dataset', valueParam: 'dataset' },
   ]),
   redis([]),
-  datasetValidation,
-  loadDatasetMiddleware,
+  datasetV0Validation,
+  loadDatasetMiddleware(),
   DatasetRouter.getAllVessels,
 );
 
@@ -81,8 +81,8 @@ router.get(
     { action: 'read', type: 'dataset', valueParam: 'dataset' },
   ]),
   redis([]),
-  datasetOfVesselIdValidation,
-  loadDatasetMiddleware,
+  datasetOfVesselIdV0Validation,
+  loadDatasetMiddleware(),
   DatasetRouter.getVesselById,
 );
 

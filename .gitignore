@@ -4,3 +4,4 @@ node_modules
 example-front/generated
 
 .idea
+.DS_Store

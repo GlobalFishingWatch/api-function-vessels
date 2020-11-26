@@ -1,8 +1,7 @@
 const groupBy = require('lodash/fp/groupBy');
 const flow = require('lodash/fp/flow');
 const sql = require('../db/sql');
-
-
+const sqlFishing = require('../db/sql-fishing');
 
 function toFixedDown(num, digits) {
   if (!num) {
@@ -59,35 +58,20 @@ const featureSettings = {
     formatterValueArray: value => Math.floor(new Date(value).getTime() / 1000),
   },
   fishing: {
-    generateGeoJSONFeatures: (features, records, params = {}) => {
-      const fishingRecords = records.filter(record => record.score > 0);
-      const coordinates = extractCoordinates(
-        fishingRecords,
-        params.wrapLongitudes,
-      );
-      const coordinateProperties = extractCoordinateProperties(
-        features,
-        fishingRecords,
-      );
-
-      return [
-        {
-          type: 'Feature',
-          properties: {
-            type: 'fishing',
-            coordinateProperties,
-          },
-          geometry: {
-            type: 'MultiPoint',
-            coordinates,
-          },
-        },
-      ];
-    },
+    generateGeoJSONFeatures: () => [],
     property: 'fishing',
-    databaseField: 'score',
-    formatter: value => value > 0,
-    formatterValueArray: value => (value > 0 ? 1 : 0),
+    coordinateProperty: 'fishing',
+    databaseField: 'fishing',
+    formatter: value => value,
+    formatterValueArray: value => (value ? 1 : 0),
+  },
+  encounter: {
+    generateGeoJSONFeatures: () => [],
+    coordinateProperty: 'encounters',
+    property: 'encounter',
+    databaseField: 'encounter',
+    formatter: value => value,
+    formatterValueArray: value => (value ? 1 : 0),
   },
   course: {
     generateGeoJSONFeatures: () => [],
@@ -98,11 +82,46 @@ const featureSettings = {
     formatterValueArray: value =>
       value !== undefined ? toFixedDown(value, 6) : nullValue,
   },
+  elevation: {
+    generateGeoJSONFeatures: () => [],
+    coordinateProperty: 'elevations',
+    property: 'elevation',
+    databaseField: 'elevation_m',
+    formatter: value => value,
+    formatterValueArray: value =>
+      value !== undefined ? toFixedDown(value, 6) : nullValue,
+  },
+  night: {
+    generateGeoJSONFeatures: () => [],
+    coordinateProperty: 'nights',
+    property: 'night',
+    databaseField: 'night',
+    formatter: value => value,
+    formatterValueArray: value => (value ? 1 : 0),
+  },
   speed: {
     generateGeoJSONFeatures: () => [],
     coordinateProperty: 'speeds',
     property: 'speed',
     databaseField: 'speed',
+    formatter: value => value,
+    formatterValueArray: value =>
+      value !== undefined ? toFixedDown(value, 6) : nullValue,
+  },
+  distance_from_shore: {
+    generateGeoJSONFeatures: () => [],
+    coordinateProperty: 'distance_from_shore',
+    property: 'distance_from_shore',
+    databaseField: 'distance_from_shore',
+    formatter: value => value,
+    formatterValueArray: value =>
+      value !== undefined ? toFixedDown(value, 6) : nullValue,
+  },
+  distance_from_port: {
+    generateGeoJSONFeatures: () => [],
+    coordinateProperty: 'distance_from_port',
+    property: 'distance_from_port',
+    databaseField: 'distance_from_port',
     formatter: value => value,
     formatterValueArray: value =>
       value !== undefined ? toFixedDown(value, 6) : nullValue,
@@ -120,7 +139,13 @@ const filtersFromParams = params => [
   ),
 ];
 
-module.exports = ({ dataset, additionalFeatures = [], params, fields }) => {
+module.exports = ({
+  dataset,
+  additionalFeatures = [],
+  params,
+  fields,
+  version = 'v0',
+}) => {
   let featureNames;
   if (additionalFeatures.indexOf('timestamp') >= 0) {
     featureNames = additionalFeatures.map(f => {
@@ -146,13 +171,118 @@ module.exports = ({ dataset, additionalFeatures = [], params, fields }) => {
           sql.raw('ST_Y("position"::geometry) AS "lat"'),
           ...additionalSelectFields,
         )
-        .from(dataset.tracksTable)
+        .from(
+          version === 'v1' ? dataset.configuration.table : dataset.tracksTable,
+        )
         .where('vessel_id', vesselId)
         .orderBy(['seg_id', 'timestamp']);
 
       return flow(...filtersFromParams(params))(baseQuery);
     },
+    loadV1(vesselId) {
+      const additionalSelectFields = features.map(
+        feature => feature.databaseField,
+      );
+      const baseQuery = sqlFishing
+        .select(
+          'seg_id',
+          'lat',
+          'lon',
+          ...additionalSelectFields,
+        )
+        .from(
+          version === 'v1' ? dataset.configuration.table : dataset.tracksTable,
+        )
+        .where('vessel_id', vesselId)
+        .orderBy(['seg_id', 'timestamp']);
 
+      return flow(...filtersFromParams(params))(baseQuery);
+    },
+    loadCarriers(vesselId) {
+      const additionalSelectFields = features.map(
+        feature => feature.databaseField,
+      );
+      let startDate = new Date('2017-01-01T00:00:00.000Z');
+      let endDate = new Date('2017-12-31T23:59:59.000Z');
+      if (params.startDate && params.startDate > startDate) {
+        startDate = params.startDate;
+      }
+      if (params.endDate && params.endDate < endDate) {
+        endDate = params.endDate;
+      }
+      let baseQuery = null;
+      const unions = [];
+      const date = new Date(startDate.getTime());
+
+      while (date < endDate) {
+        const q = sqlFishing
+          .select(
+            'seg_id',
+            sqlFishing.raw('lon'),
+            sqlFishing.raw('lat'),
+            ...additionalSelectFields,
+          )
+          .from(`carriers_${date.getFullYear()}`)
+          .where('vessel_id', vesselId);
+
+        if (!baseQuery) {
+          q.where('timestamp', '>', startDate);
+          baseQuery = q;
+        } else {
+          unions.push(q);
+        }
+        date.setFullYear(date.getFullYear() + 1);
+      }
+      if (!baseQuery) {
+        return [];
+      }
+      if (unions.length > 0) {
+        unions[unions.length - 1].where('timestamp', '<', endDate);
+        baseQuery = baseQuery.union(unions);
+      } else {
+        baseQuery = baseQuery.where('timestamp', '<', endDate);
+      }
+      const q = sqlFishing
+        .with('total', baseQuery)
+        .select(
+          'seg_id',
+          sqlFishing.raw('lon'),
+          sqlFishing.raw('lat'),
+          ...additionalSelectFields,
+        )
+        .from('total')
+        .orderBy(['seg_id', 'timestamp']);
+
+      return q;
+    },
+    loadFishing(vesselId, table) {
+      const additionalSelectFields = features.map(
+        feature => feature.databaseField,
+      );
+      let startDate = new Date('2012-01-01T00:00:00.000Z');
+      let endDate = new Date('2019-12-31T23:59:59.000Z');
+      if (params.startDate && params.startDate > startDate) {
+        startDate = params.startDate;
+      }
+      if (params.endDate && params.endDate < endDate) {
+        endDate = params.endDate;
+      }
+
+      const q = sqlFishing
+        .select(
+          'seg_id',
+          sqlFishing.raw('lon'),
+          sqlFishing.raw('lat'),
+          ...additionalSelectFields,
+        )
+        .from(table)
+        .where('vessel_id', vesselId)
+        .where('timestamp', '>=', startDate)
+        .where('timestamp', '<=', endDate)
+        .orderBy(['seg_id', 'timestamp']);
+
+      return q;
+    },
     formatters: {
       lines(records) {
         const segments = groupBy(record => record.seg_id)(records);
@@ -232,7 +362,7 @@ module.exports = ({ dataset, additionalFeatures = [], params, fields }) => {
 
         let currentLon;
         let lonOffset = 0;
-        
+
         records.forEach(record => {
           if (segId !== record.seg_id) {
             segId = record.seg_id;
@@ -249,8 +379,8 @@ module.exports = ({ dataset, additionalFeatures = [], params, fields }) => {
                 } else if (record.lon - currentLon > 180) {
                   lonOffset -= 360;
                 }
-              }  
-              currentLon = record.lon; 
+              }
+              currentLon = record.lon;
               valueArray.push(toFixedDown(record.lon + lonOffset, 6));
             } else {
               valueArray.push(toFixedDown(record.lon, 6));

@@ -6,7 +6,9 @@ const elasticsearch = require('../db/elasticsearch');
 const { log } = require('gfw-api-utils').logger;
 const { parseSqlToElasticSearchQuery } = require('../parser/sql-parser');
 const { mappingToSchema } = require('../parser/mapping-to-schema');
-const { VESSELS_CONSTANTS: { IMO, MMSI, SHIPNAME, FLAG, VESSEL_ID, QUERY_TYPES } } = require('../constant');
+const {
+  VESSELS_CONSTANTS: { IMO, MMSI, SHIPNAME, FLAG, VESSEL_ID, QUERY_TYPES },
+} = require('../constant');
 const { removeWhitespace } = require('../utils/remove-whitespace');
 const { sanitizeSqlQuery } = require('../utils/sanitize-sql');
 
@@ -15,10 +17,6 @@ const transformSource = source => result => {
   const baseFields = source.tileset
     ? { tilesetId: source.tileset }
     : { dataset: source.dataset.name };
-<<<<<<< HEAD
-
-=======
->>>>>>> develop
   const {
     firstTimestamp: firstTransmissionDate,
     lastTimestamp: lastTransmissionDate,
@@ -45,37 +43,36 @@ const transformSourceV1 = source => result => {
     ...entry._source,
     ...baseFields,
   };
-}
+};
 
 const transformSuggestResult = (suggests, query) => {
   const suggestion = suggests
-    .map(it => it.options.length ? it.options[0].text : it.text)
-    .join(" ")
+    .map(it => (it.options.length ? it.options[0].text : it.text))
+    .join(' ')
     .toUpperCase();
   return query.toUpperCase() !== suggestion ? suggestion : null;
-}
+};
 
-const getQueryFieldsFiltered = (query) => {
+const getQueryFieldsFiltered = query => {
   if (query.queryFields.length > 0) {
-    return query.queryFields
+    return query.queryFields;
   }
 
   if (/^\d{7}$/.test(query.query.trim())) {
-    return [IMO]
+    return [IMO];
   }
 
   if (/^\d{9}$/.test(query.query.trim())) {
-    return [MMSI]
+    return [MMSI];
   }
 
-  return [SHIPNAME, FLAG, VESSEL_ID, IMO, MMSI]
-}
+  return [SHIPNAME, FLAG, VESSEL_ID, IMO, MMSI];
+};
 
 const calculateNextOffset = (query, results) =>
   query.offset + query.limit <= results.hits.total.value
     ? query.offset + query.limit
     : null;
-
 
 const transformGetAllVesselsResults = ({ query, source }) => results => {
   const { body } = results;
@@ -83,10 +80,12 @@ const transformGetAllVesselsResults = ({ query, source }) => results => {
     total: body.docs.length,
     limit: query.limit,
     offset: query.offset,
-    nextOffset: calculateNextOffset(query, { hits: { total: { value: body.docs.length } } }),
+    nextOffset: calculateNextOffset(query, {
+      hits: { total: { value: body.docs.length } },
+    }),
     entries: body.docs.map(doc => {
       return source.version === 'v1'
-        ?  transformSourceV1(source)(doc)
+        ? transformSourceV1(source)(doc)
         : transformSource(source)(doc);
     }),
   };
@@ -95,11 +94,17 @@ const transformGetAllVesselsResults = ({ query, source }) => results => {
 const transformGetVesselSchemaResults = () => results => {
   const { body } = results;
   const indexNameFromES = Object.keys(body)[0];
-  const { mappings: { properties } } = body[indexNameFromES];
+  const {
+    mappings: { properties },
+  } = body[indexNameFromES];
   return mappingToSchema(properties);
 };
 
-const transformSearchResults = ({ query, source, includeMetadata }) => results => {
+const transformSearchResults = ({
+  query,
+  source,
+  includeMetadata,
+}) => results => {
   const { body } = results;
   return {
     query: query.query,
@@ -108,16 +113,22 @@ const transformSearchResults = ({ query, source, includeMetadata }) => results =
     offset: query.offset,
     nextOffset: calculateNextOffset(query, body),
     entries: body.hits.hits.map(transformSource(source)),
-    metadata: includeMetadata && includeMetadata === true && body.suggest ?
-      { suggestion: transformSuggestResult(body.suggest.searchSuggest, query.query) }
-      : undefined,
+    metadata:
+      includeMetadata && includeMetadata === true && body.suggest
+        ? {
+            suggestion: transformSuggestResult(
+              body.suggest.searchSuggest,
+              query.query,
+            ),
+          }
+        : undefined,
   };
 };
 
 const transformSuggestionsResults = ({
-                                       results,
-                                       source,
-                                     }) => suggestionResults => {
+  results,
+  source,
+}) => suggestionResults => {
   const suggestionResultsTransformed = suggestionResults.body.hits.hits.map(
     transformSource(source),
   );
@@ -131,9 +142,8 @@ const transformSuggestionsResults = ({
 };
 
 const getQueryByType = (type, index, query) => {
-  const sanitizedQuery = type !== QUERY_TYPES.IDS
-    ? sanitizeSqlQuery(query.query)
-    : null;
+  const sanitizedQuery =
+    type !== QUERY_TYPES.IDS ? sanitizeSqlQuery(query.query) : null;
 
   const suggest = {
     text: sanitizedQuery,
@@ -156,8 +166,8 @@ const getQueryByType = (type, index, query) => {
 
   if (type === QUERY_TYPES.PHRASE) {
     basicQuery.body.query = {
-      match_phrase: {}
-    }
+      match_phrase: {},
+    };
     basicQuery.body.query.match_phrase[SHIPNAME] = sanitizedQuery;
   }
 
@@ -167,16 +177,14 @@ const getQueryByType = (type, index, query) => {
         query: sanitizedQuery,
         fields: getQueryFieldsFiltered(query),
       },
-    }
+    };
   }
 
   return basicQuery;
-}
+};
 
 function getQueryType(query) {
-  return /^".*"$/.test(query.query)
-    ? QUERY_TYPES.PHRASE
-    : QUERY_TYPES.TOKENS;
+  return /^".*"$/.test(query.query) ? QUERY_TYPES.PHRASE : QUERY_TYPES.TOKENS;
 }
 
 module.exports = source => {
@@ -194,22 +202,23 @@ module.exports = source => {
   log.debug(`Searching in elasticsearch index ${index}`);
 
   return {
-
     async getAllVessels(query) {
       const multiQueries = query.ids.map(id => {
         return {
           _index: index,
           _id: id,
         };
-      })
+      });
       const elasticSearchQuery = { body: { docs: multiQueries } };
-      return elasticsearch.mget(elasticSearchQuery)
-        .then(transformGetAllVesselsResults({ query, source }))
+      return elasticsearch
+        .mget(elasticSearchQuery)
+        .then(transformGetAllVesselsResults({ query, source }));
     },
 
     async getVesselsSchema() {
-      log.info(`Getting mapping for index ${ index }`);
-      return elasticsearch.indices.getMapping({ index })
+      log.info(`Getting mapping for index ${index}`);
+      return elasticsearch.indices
+        .getMapping({ index })
         .then(transformGetVesselSchemaResults({ source }));
     },
 
@@ -263,55 +272,73 @@ module.exports = source => {
 
     async searchWithSuggest(query) {
       const queryType = getQueryType(query.query);
-      log.info(`The query type is ${queryType}`, )
-      const elasticSearchQuery = getQueryByType(queryType, index, query)
-      log.info(`The query is ${JSON.stringify(elasticSearchQuery)}`, )
+      log.info(`The query type is ${queryType}`);
+      const elasticSearchQuery = getQueryByType(queryType, index, query);
+      log.info(`The query is ${JSON.stringify(elasticSearchQuery)}`);
       return elasticsearch
         .search(elasticSearchQuery)
-        .then(transformSearchResults({ query, source, includeMetadata: queryType !== QUERY_TYPES.IDS }));
+        .then(
+          transformSearchResults({
+            query,
+            source,
+            includeMetadata: queryType !== QUERY_TYPES.IDS,
+          }),
+        );
     },
 
     async advanceSearch(query) {
-      const { dataset: { configuration: { index: table } } } = source;
-      const sqlQuery = parseSqlToElasticSearchQuery(table, removeWhitespace(query.query))
-      log.info(`SQL Query > ${sqlQuery}`)
-      const { body: { query: elasticSearchQuery } } = await elasticsearch.sql.translate({
-        body: {
-          query: sqlQuery
-        }
-      }).catch(err => {
-        const message = err.meta && err.meta.body && err.meta.body.error && err.meta.body.error.reason
-          ? `Invalid Query: ${ err.meta.body.error.reason.replace(/line \d{0,}:\d{0,}: /, '').replace('double ', '').replace('\n', ', ') }`
-          : 'Invalid Query';
-        throw new UnprocessableEntityException('Invalid Query: ', {
-          message,
-          path: ['query']
+      const {
+        dataset: {
+          configuration: { index: table },
+        },
+      } = source;
+      const sqlQuery = parseSqlToElasticSearchQuery(
+        table,
+        removeWhitespace(query.query),
+      );
+      log.info(`SQL Query > ${sqlQuery}`);
+      const {
+        body: { query: elasticSearchQuery },
+      } = await elasticsearch.sql
+        .translate({
+          body: {
+            query: sqlQuery,
+          },
         })
-      })
+        .catch(err => {
+          const message =
+            err.meta &&
+            err.meta.body &&
+            err.meta.body.error &&
+            err.meta.body.error.reason
+              ? `Invalid Query: ${err.meta.body.error.reason
+                  .replace(/line \d{0,}:\d{0,}: /, '')
+                  .replace('double ', '')
+                  .replace('\n', ', ')}`
+              : 'Invalid Query';
+          throw new UnprocessableEntityException('Invalid Query: ', {
+            message,
+            path: ['query'],
+          });
+        });
       return elasticsearch
         .search({
           body: {
             from: query.offset,
             size: query.limit,
-            query: elasticSearchQuery
-          }
+            query: elasticSearchQuery,
+          },
         })
-        .then(transformSearchResults({ query, source, includeMetadata: true }))
+        .then(transformSearchResults({ query, source, includeMetadata: true }));
     },
 
     async getOneById(id) {
-      return elasticsearch.get({
-        index,
-<<<<<<< HEAD
-        // type: 'vessel',
-        id: vesselId,
-      };
-      return elasticsearch.get(identity).then(transformSearchResult(source));
-=======
-        id,
-      }).then(transformSource(source))
-
->>>>>>> develop
+      return elasticsearch
+        .get({
+          index,
+          id,
+        })
+        .then(transformSource(source));
     },
   };
 };

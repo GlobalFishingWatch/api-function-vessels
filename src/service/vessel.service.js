@@ -97,13 +97,14 @@ const transformGetVesselSchemaResults = () => results => {
 
 const transformSearchResults = ({ query, source, includeMetadata }) => results => {
   const { body } = results;
+
   return {
     query: query.query,
     total: body.hits.total,
     limit: query.limit,
     offset: query.offset,
     nextOffset: calculateNextOffset(query, body),
-    entries: body.hits.hits.map(transformSource(source)),
+    entries: body.hits.hits.map(transformSourceV1(source)),
     metadata: includeMetadata && includeMetadata === true && body.suggest ?
       { suggestion: transformSuggestResult(body.suggest.searchSuggest, query.query) }
       : undefined,

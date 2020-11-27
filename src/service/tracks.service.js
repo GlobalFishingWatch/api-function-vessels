@@ -116,7 +116,7 @@ const featureSettings = {
     databaseField: 'distance_from_shore',
     formatter: value => value,
     formatterValueArray: value =>
-      value !== undefined ? toFixedDown(value, 6) : nullValue,
+      value !== undefined ? toFixedDown(value, 0) : nullValue,
   },
   distance_from_port: {
     generateGeoJSONFeatures: () => [],
@@ -125,7 +125,7 @@ const featureSettings = {
     databaseField: 'distance_from_port',
     formatter: value => value,
     formatterValueArray: value =>
-      value !== undefined ? toFixedDown(value, 6) : nullValue,
+      value !== undefined ? toFixedDown(value, 0) : nullValue,
   },
 };
 

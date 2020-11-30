@@ -112,7 +112,7 @@ const transformSearchResults = ({
     limit: query.limit,
     offset: query.offset,
     nextOffset: calculateNextOffset(query, body),
-    entries: body.hits.hits.map(transformSource(source)),
+    entries: body.hits.hits.map(transformSourceV1(source)),
     metadata:
       includeMetadata && includeMetadata === true && body.suggest
         ? {

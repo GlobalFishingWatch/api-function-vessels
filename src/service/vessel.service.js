@@ -338,7 +338,7 @@ module.exports = source => {
           index,
           id,
         })
-        .then(transformSource(source));
+        .then(transformSourceV1(source));
     },
   };
 };

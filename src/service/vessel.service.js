@@ -300,7 +300,7 @@ module.exports = source => {
       return elasticsearch.get({
         index,
         id,
-      }).then(transformSource(source))
+      }).then(transformSourceV1(source))
 
     },
   };

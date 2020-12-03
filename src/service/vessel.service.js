@@ -114,9 +114,15 @@ const transformSearchResults = ({
     offset: query.offset,
     nextOffset: calculateNextOffset(query, body),
     entries: body.hits.hits.map(transformSourceV1(source)),
-    metadata: includeMetadata && includeMetadata === true && body.suggest ?
-      { suggestion: transformSuggestResult(body.suggest.searchSuggest, query.query) }
-      : undefined,
+    metadata:
+      includeMetadata && includeMetadata === true && body.suggest
+        ? {
+            suggestion: transformSuggestResult(
+              body.suggest.searchSuggest,
+              query.query,
+            ),
+          }
+        : undefined,
   };
 };
 
@@ -270,15 +276,13 @@ module.exports = source => {
       log.info(`The query type is ${queryType}`);
       const elasticSearchQuery = getQueryByType(queryType, index, query);
       log.info(`The query is ${JSON.stringify(elasticSearchQuery)}`);
-      return elasticsearch
-        .search(elasticSearchQuery)
-        .then(
-          transformSearchResults({
-            query,
-            source,
-            includeMetadata: queryType !== QUERY_TYPES.IDS,
-          }),
-        );
+      return elasticsearch.search(elasticSearchQuery).then(
+        transformSearchResults({
+          query,
+          source,
+          includeMetadata: queryType !== QUERY_TYPES.IDS,
+        }),
+      );
     },
 
     async advanceSearch(query) {
@@ -328,20 +332,12 @@ module.exports = source => {
     },
 
     async getOneById(id) {
-<<<<<<< HEAD
       return elasticsearch
         .get({
           index,
           id,
         })
         .then(transformSourceV1(source));
-=======
-      return elasticsearch.get({
-        index,
-        id,
-      }).then(transformSourceV1(source))
-
->>>>>>> develop
     },
   };
 };

@@ -2,6 +2,7 @@ const groupBy = require('lodash/fp/groupBy');
 const flow = require('lodash/fp/flow');
 const sql = require('../db/sql');
 const sqlFishing = require('../db/sql-fishing');
+const sqlFishingTracks = require('../db/sql-fishing-tracks');
 
 function toFixedDown(num, digits) {
   if (!num) {
@@ -115,7 +116,7 @@ const featureSettings = {
     databaseField: 'distance_from_shore',
     formatter: value => value,
     formatterValueArray: value =>
-      value !== undefined ? toFixedDown(value, 6) : nullValue,
+      value !== undefined ? toFixedDown(value, 0) : nullValue,
   },
   distance_from_port: {
     generateGeoJSONFeatures: () => [],
@@ -124,7 +125,7 @@ const featureSettings = {
     databaseField: 'distance_from_port',
     formatter: value => value,
     formatterValueArray: value =>
-      value !== undefined ? toFixedDown(value, 6) : nullValue,
+      value !== undefined ? toFixedDown(value, 0) : nullValue,
   },
 };
 
@@ -183,7 +184,8 @@ module.exports = ({
       const additionalSelectFields = features.map(
         feature => feature.databaseField,
       );
-      const baseQuery = sqlFishing
+      const db = dataset.id === 'fishing-tracks:v20190502' ? sqlFishingTracks : sqlFishing;
+      const baseQuery = db
         .select(
           'seg_id',
           'lat',

@@ -134,10 +134,10 @@ router.use(koa.obtainUser(false));
 
 router.get(
   '/vessels/:vesselId/tracks',
-  /*koa.checkPermissionsWithRequestParams([
+  koa.checkPermissionsWithRequestParams([
     { action: 'read', type: 'dataset', valueQueryParam: 'datasets' },
   ]),
-  redis([]),*/
+  redis([]),
   tracksV1Validation,
   loadDatasetQueryMiddleware('v1'),
   checkDatasetTypeMiddleware('carriers-tracks'),

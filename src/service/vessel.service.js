@@ -106,6 +106,7 @@ const transformSearchResults = ({
   includeMetadata,
 }) => results => {
   const { body } = results;
+
   return {
     query: query.query,
     total: body.hits.total,
@@ -113,15 +114,9 @@ const transformSearchResults = ({
     offset: query.offset,
     nextOffset: calculateNextOffset(query, body),
     entries: body.hits.hits.map(transformSourceV1(source)),
-    metadata:
-      includeMetadata && includeMetadata === true && body.suggest
-        ? {
-            suggestion: transformSuggestResult(
-              body.suggest.searchSuggest,
-              query.query,
-            ),
-          }
-        : undefined,
+    metadata: includeMetadata && includeMetadata === true && body.suggest ?
+      { suggestion: transformSuggestResult(body.suggest.searchSuggest, query.query) }
+      : undefined,
   };
 };
 
@@ -333,12 +328,20 @@ module.exports = source => {
     },
 
     async getOneById(id) {
+<<<<<<< HEAD
       return elasticsearch
         .get({
           index,
           id,
         })
         .then(transformSourceV1(source));
+=======
+      return elasticsearch.get({
+        index,
+        id,
+      }).then(transformSourceV1(source))
+
+>>>>>>> develop
     },
   };
 };

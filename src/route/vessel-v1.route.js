@@ -4,6 +4,7 @@ const {
   errors: { NotFoundException },
 } = require('auth-middleware');
 const checkDatasetTypeMiddleware = require('../middleware/check-type-dataset.middleware');
+const setFieldsToSearchMiddleware = require('../middleware/set-fields-to-search.middleware');
 const vesselService = require('../service/vessel.service');
 const loadDatasetQueryMiddleware = require('../middleware/load-dataset-query.middleware');
 const { log } = require('gfw-api-utils').logger;
@@ -65,6 +66,7 @@ class VesselRouter {
     const result = await vesselService({
       datasets: ctx.state.datasets,
       version: ctx.state.datasetVersion,
+      fieldsToSearch: ctx.state.fieldsToSearch,
     }).searchWithSuggest(query);
 
     await encodeService(ctx, 'DatasetVesselInfo', ctx.query.binary)(result);
@@ -82,6 +84,7 @@ class VesselRouter {
     const result = await vesselService({
       datasets: ctx.state.datasets,
       version: ctx.state.datasetVersion,
+      fieldsToSearch: ctx.state.fieldsToSearch,
     }).advanceSearch(query);
 
     await encodeService(ctx, 'DatasetVesselInfo', ctx.query.binary)(result);
@@ -155,6 +158,7 @@ router.get(
   redis([]),
   searchVesselsV1Validation,
   loadDatasetQueryMiddleware('v1'),
+  setFieldsToSearchMiddleware,
   checkDatasetTypeMiddleware('carriers-vessels'),
   VesselRouter.getVesselsUsingSearch,
 );
@@ -166,8 +170,9 @@ router.get(
   ]),
   redis([]),
   advancedSearchVesselsV1Validation,
-  advancedSearchSqlValidation,
   loadDatasetQueryMiddleware('v1'),
+  setFieldsToSearchMiddleware,
+  advancedSearchSqlValidation,
   checkDatasetTypeMiddleware('carriers-vessels'),
   VesselRouter.getVesselsUsingAdvanceSearch,
 );

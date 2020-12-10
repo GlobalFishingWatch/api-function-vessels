@@ -1,7 +1,7 @@
 const sanitizeSqlQuery = query => {
   /*eslint-disable */
   return query
-    .replace(/[*\+\-=~><\"\?^\${}\(\)\:\!\/[\]\\\s]/g, '\\$&')
+    .replace(/[*\+=~><\"\?^\${}\(\)\:\!\/[\]\\\s]/g, '\\$&')
     .replace(/\|\|/g, '\\||') // replace ||
     .replace(/\&\&/g, '\\&&')
     .replace(/AND/g, '\\A\\N\\D')

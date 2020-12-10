@@ -6,7 +6,7 @@ const elasticsearch = require('../db/elasticsearch');
 const { log } = require('gfw-api-utils').logger;
 const { parseSqlToElasticSearchQuery } = require('../parser/sql-parser');
 const { mappingToSchema } = require('../parser/mapping-to-schema');
-const { VESSELS_CONSTANTS: { IMO, MMSI, SHIPNAME, FLAG, VESSEL_ID, QUERY_TYPES } } = require('../constant');
+const { VESSELS_CONSTANTS: { DEFAULT_PROPERTY_SUGGEST } } = require('../constant');
 const { removeWhitespace } = require('../utils/remove-whitespace');
 const { sanitizeSqlQuery } = require('../utils/sanitize-sql');
 
@@ -54,20 +54,21 @@ const transformSuggestResult = (suggests, query) => {
   return query.toUpperCase() !== suggestion ? suggestion : null;
 }
 
-const getQueryFieldsFiltered = (query) => {
-  if (query.queryFields.length > 0) {
-    return query.queryFields
+const getQueryFieldsFiltered = (query, fieldsToSearch) => {
+  if (query.queryFields.length === 0) {
+    return fieldsToSearch;
   }
 
-  if (/^\d{7}$/.test(query.query.trim())) {
-    return [IMO]
-  }
+  query.queryFields.forEach((field) => {
+    if (!fieldsToSearch.includes(field)) {
+      throw new UnprocessableEntityException('Invalid Query: ', {
+        message: `${field} is not an allowed field to search`,
+        path: ['queryFields']
+      })
+    }
+  })
 
-  if (/^\d{9}$/.test(query.query.trim())) {
-    return [MMSI]
-  }
-
-  return [SHIPNAME, FLAG, VESSEL_ID, IMO, MMSI]
+  return query.queryFields;
 }
 
 const calculateNextOffset = (query, results) =>
@@ -108,7 +109,7 @@ const transformSearchResults = ({ query, source, includeMetadata }) => results =
     nextOffset: calculateNextOffset(query, body),
     entries: body.hits.hits.map(transformSourceV1(source)),
     metadata: includeMetadata && includeMetadata === true && body.suggest ?
-      { suggestion: transformSuggestResult(body.suggest.searchSuggest, query.query) }
+      { suggestion: transformSuggestResult(body.suggest.searchSuggest, query.query), field: query.suggestField || DEFAULT_PROPERTY_SUGGEST }
       : undefined,
   };
 };
@@ -129,54 +130,39 @@ const transformSuggestionsResults = ({
   );
 };
 
-const getQueryByType = (type, index, query) => {
- /* const sanitizedQuery = type !== QUERY_TYPES.IDS
-    ? sanitizeSqlQuery(query.query)
-    : null;
-*/
-  const suggest = {
-    text: query.query,
-    searchSuggest: {
-      term: {
-        field: query.suggestField,
-      },
-    },
-  };
+const getQueryByType = (index, query, fieldsToSearch) => {
+  const sanitizedQuery = sanitizeSqlQuery(query.query);
+  log.info(`Query sanitized: ${sanitizedQuery}`);
 
-  const basicQuery = {
+  const fields = getQueryFieldsFiltered(query, fieldsToSearch);
+  log.info(`Fields to search: ${fields}`);
+
+  const suggestField = query.suggestField || DEFAULT_PROPERTY_SUGGEST;
+  log.info(`Result based on suggest field: ${suggestField}`);
+
+
+  return {
     index,
     from: query.offset || 0,
     size: query.limit || 10,
     body: {
-      query: {},
-      suggest,
-    },
-  };
-
-  if (type === QUERY_TYPES.PHRASE) {
-    basicQuery.body.query = {
-      match_phrase: {}
-    }
-    basicQuery.body.query.match_phrase[SHIPNAME] = query.query;
-  }
-
-  if (type === QUERY_TYPES.TOKENS) {
-    basicQuery.body.query = {
-      query_string: {
-        query: query.query,
-        fields: getQueryFieldsFiltered(query),
-        default_operator: 'and'
+      query: {
+        query_string: {
+          query: sanitizedQuery,
+          fields,
+          default_operator: 'and'
+        }
+      },
+      suggest: {
+        text: sanitizedQuery,
+        searchSuggest: {
+          term: {
+            field: suggestField,
+          },
+        },
       },
     }
-  }
-
-  return basicQuery;
-}
-
-function getQueryType(query) {
-  return /^".*"$/.test(query.query)
-    ? QUERY_TYPES.PHRASE
-    : QUERY_TYPES.TOKENS;
+  };
 }
 
 const addIndicesMappedToSource = async function (source) {
@@ -288,16 +274,14 @@ module.exports = source => {
     },
 
     async searchWithSuggest(query) {
-      const queryType = getQueryType(query.query);
-      log.info(`The query type is ${queryType}`, )
-      const elasticSearchQuery = getQueryByType(queryType, index, query)
+      const elasticSearchQuery = getQueryByType(index, query, source.fieldsToSearch)
       log.info(`The query is ${JSON.stringify(elasticSearchQuery)}`, )
 
       const sourceWithMappings = await addIndicesMappedToSource(source);
 
       return elasticsearch
         .search(elasticSearchQuery)
-        .then(transformSearchResults({ query, source: sourceWithMappings, includeMetadata: queryType !== QUERY_TYPES.IDS }))
+        .then(transformSearchResults({ query, source: sourceWithMappings, includeMetadata: true }))
     },
 
     async advanceSearch(query) {

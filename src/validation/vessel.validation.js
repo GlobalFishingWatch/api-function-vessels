@@ -59,11 +59,19 @@ async function getVesselByIdV1Validation(ctx, next) {
 async function getVesselSchemaV1Validation(ctx, next) {
   try {
     await validateSchema(ctx, schemaGetVesselSchemaV1)
-    if (ctx.query.datasets) {
-      ctx.query.datasets = splitDatasets(ctx.query.datasets);
-    }
   } catch (err) {
-    throw new UnprocessableEntityException('Invalid request', err.details);
+    throw new UnprocessableEntityException('Invalid query', err.details);
+  }
+  if (ctx.query.datasets) {
+    ctx.query.datasets = splitDatasets(ctx.query.datasets);
+    if (ctx.query.datasets.length > 1) {
+      throw new UnprocessableEntityException('Invalid query', [
+        {
+          path: ['datasets'],
+          message: 'Only supported one dataset',
+        },
+      ]);
+    }
   }
   await next();
 }

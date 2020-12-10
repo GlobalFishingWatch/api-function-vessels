@@ -32,10 +32,13 @@ const transformSource = source => result => {
 
 const transformSourceV1 = source => result => {
   const entry = result.body ? result.body : result;
+  const { _index: index } = entry;
+
+  const { id } = source.indicesMapped.find((it) => it.index === index);
+
   const baseFields = source.tileset
     ? { tilesetId: source.tileset }
-    : { dataset: source.dataset.id };
-
+    : { dataset: id };
   return {
     id: entry._id,
     ...entry._source,
@@ -97,7 +100,6 @@ const transformGetVesselSchemaResults = () => results => {
 
 const transformSearchResults = ({ query, source, includeMetadata }) => results => {
   const { body } = results;
-
   return {
     query: query.query,
     total: body.hits.total,
@@ -128,12 +130,12 @@ const transformSuggestionsResults = ({
 };
 
 const getQueryByType = (type, index, query) => {
-  const sanitizedQuery = type !== QUERY_TYPES.IDS
+ /* const sanitizedQuery = type !== QUERY_TYPES.IDS
     ? sanitizeSqlQuery(query.query)
     : null;
-
+*/
   const suggest = {
-    text: sanitizedQuery,
+    text: query.query,
     searchSuggest: {
       term: {
         field: query.suggestField,
@@ -155,14 +157,15 @@ const getQueryByType = (type, index, query) => {
     basicQuery.body.query = {
       match_phrase: {}
     }
-    basicQuery.body.query.match_phrase[SHIPNAME] = sanitizedQuery;
+    basicQuery.body.query.match_phrase[SHIPNAME] = query.query;
   }
 
   if (type === QUERY_TYPES.TOKENS) {
     basicQuery.body.query = {
       query_string: {
-        query: sanitizedQuery,
+        query: query.query,
         fields: getQueryFieldsFiltered(query),
+        default_operator: 'and'
       },
     }
   }
@@ -176,11 +179,29 @@ function getQueryType(query) {
     : QUERY_TYPES.TOKENS;
 }
 
+const addIndicesMappedToSource = async function (source) {
+  const { body: aliases } = await elasticsearch.cat.aliases({
+    format: 'json'
+  })
+
+  const indicesMapped = await Promise.all(source.datasets.map(async (dataset) => {
+    const { index: iterationIndex } = dataset.configuration;
+    const currentAlias = aliases.find(alias => alias.alias === iterationIndex);
+    return {
+      id: dataset.id,
+      alias: currentAlias ? currentAlias.alias : null,
+      index: currentAlias ? currentAlias.index : iterationIndex,
+    }
+  }));
+
+  return { ...source, indicesMapped };
+}
+
 module.exports = source => {
   let index;
-  if (source.dataset) {
+  if (source.datasets) {
     if (source.version === 'v1') {
-      index = source.dataset.configuration.index;
+      index = source.datasets.map(idx => idx.configuration.index).join(",");
     } else {
       index = source.dataset.vesselIndex;
     }
@@ -193,15 +214,23 @@ module.exports = source => {
   return {
 
     async getAllVessels(query) {
+
+      const sourceWithMappings = await addIndicesMappedToSource(source);
+
       const multiQueries = query.ids.map(id => {
         return {
-          _index: index,
+          _index: index.split(","),
           _id: id,
         };
       })
       const elasticSearchQuery = { body: { docs: multiQueries } };
+
       return elasticsearch.mget(elasticSearchQuery)
-        .then(transformGetAllVesselsResults({ query, source }))
+        .then(response => {
+          response.body.docs = response.body.docs.filter((doc) => doc.found === true);
+          return response;
+        })
+        .then(transformGetAllVesselsResults({ query, source: sourceWithMappings }))
     },
 
     async getVesselsSchema() {
@@ -263,15 +292,18 @@ module.exports = source => {
       log.info(`The query type is ${queryType}`, )
       const elasticSearchQuery = getQueryByType(queryType, index, query)
       log.info(`The query is ${JSON.stringify(elasticSearchQuery)}`, )
+
+      const sourceWithMappings = await addIndicesMappedToSource(source);
+
       return elasticsearch
         .search(elasticSearchQuery)
-        .then(transformSearchResults({ query, source, includeMetadata: queryType !== QUERY_TYPES.IDS }));
+        .then(transformSearchResults({ query, source: sourceWithMappings, includeMetadata: queryType !== QUERY_TYPES.IDS }))
     },
 
     async advanceSearch(query) {
-      const { dataset: { configuration: { index: table } } } = source;
-      const sqlQuery = parseSqlToElasticSearchQuery(table, removeWhitespace(query.query))
+      const sqlQuery = parseSqlToElasticSearchQuery(index, removeWhitespace(query.query))
       log.info(`SQL Query > ${sqlQuery}`)
+
       const { body: { query: elasticSearchQuery } } = await elasticsearch.sql.translate({
         body: {
           query: sqlQuery
@@ -285,22 +317,29 @@ module.exports = source => {
           path: ['query']
         })
       })
+
+      const sourceWithMappings = await addIndicesMappedToSource(source);
+
       return elasticsearch
         .search({
+          index,
+          from: query.offset,
+          size: query.limit,
           body: {
-            from: query.offset,
-            size: query.limit,
-            query: elasticSearchQuery
+            query: elasticSearchQuery,
           }
         })
-        .then(transformSearchResults({ query, source, includeMetadata: true }))
+        .then(transformSearchResults({ query, source: sourceWithMappings, includeMetadata: true }))
     },
 
     async getOneById(id) {
+
+      const sourceWithMappings = await addIndicesMappedToSource(source);
+
       return elasticsearch.get({
         index,
         id,
-      }).then(transformSourceV1(source))
+      }).then(transformSourceV1(sourceWithMappings))
 
     },
   };

@@ -134,7 +134,8 @@ const getQueryByType = (index, query, fieldsToSearch) => {
   const sanitizedQuery = sanitizeSqlQuery(query.query);
   log.info(`Query sanitized: ${sanitizedQuery}`);
 
-  const fields = getQueryFieldsFiltered(query, fieldsToSearch);
+  const fieldsToSearchCleared = fieldsToSearch.filter(field => !['lastTransmissionDate', 'firstTransmissionDate'].includes(field))
+  const fields = getQueryFieldsFiltered(query, fieldsToSearchCleared);
   log.info(`Fields to search: ${fields}`);
 
   const suggestField = query.suggestField || DEFAULT_PROPERTY_SUGGEST;
@@ -278,7 +279,6 @@ module.exports = source => {
       log.info(`The query is ${JSON.stringify(elasticSearchQuery)}`, )
 
       const sourceWithMappings = await addIndicesMappedToSource(source);
-
       return elasticsearch
         .search(elasticSearchQuery)
         .then(transformSearchResults({ query, source: sourceWithMappings, includeMetadata: true }))

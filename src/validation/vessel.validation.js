@@ -2,7 +2,6 @@ const {
   errors: { UnprocessableEntityException },
 } = require('auth-middleware');
 const SqlWhereParser = require('sql-where-parser');
-const { VESSELS_CONSTANTS: { IMO, MMSI, SHIPNAME, VESSEL_ID, FLAG, CALLSIGN } } = require('../constant');
 const { removeWhitespace } = require('../utils/remove-whitespace');
 const { splitDatasets } = require('../utils/split-datasets');
 const {
@@ -59,11 +58,19 @@ async function getVesselByIdV1Validation(ctx, next) {
 async function getVesselSchemaV1Validation(ctx, next) {
   try {
     await validateSchema(ctx, schemaGetVesselSchemaV1)
-    if (ctx.query.datasets) {
-      ctx.query.datasets = splitDatasets(ctx.query.datasets);
-    }
   } catch (err) {
-    throw new UnprocessableEntityException('Invalid request', err.details);
+    throw new UnprocessableEntityException('Invalid query', err.details);
+  }
+  if (ctx.query.datasets) {
+    ctx.query.datasets = splitDatasets(ctx.query.datasets);
+    if (ctx.query.datasets.length > 1) {
+      throw new UnprocessableEntityException('Invalid query', [
+        {
+          path: ['datasets'],
+          message: 'Only supported one dataset',
+        },
+      ]);
+    }
   }
   await next();
 }
@@ -119,11 +126,11 @@ async function advancedSearchSqlValidation(ctx, next) {
     const { query: { query: sql } } = ctx;
     const parser = new SqlWhereParser();
     const whereParsed = parser.parse(removeWhitespace(sql));
-    validateFields(whereParsed, [IMO, MMSI, SHIPNAME, VESSEL_ID, FLAG, CALLSIGN]);
+    validateFields(whereParsed, ctx.state.fieldsToSearch);
     ctx.query.query = removeWhitespace(sql);
   } catch (err) {
     throw new UnprocessableEntityException('Invalid Query: ', {
-      message: `Query malformed, remember to exclude where and use correct syntax.`,
+      message: `Invalid query, remember to exclude where and use correct syntax. Fields allowed ${ctx.state.fieldsToSearch}`,
       path: ['query'],
     })
   }

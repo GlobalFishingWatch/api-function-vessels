@@ -99,7 +99,19 @@ const transformGetVesselSchemaResults = () => results => {
   return mappingToSchema(properties);
 };
 
-const transformSearchResults = ({ query, source, includeMetadata }) => results => {
+const transformSearchResults = ({ query, source }) => results => {
+  const { body } = results;
+  return {
+    query: query.query,
+    total: body.hits.total,
+    limit: query.limit,
+    offset: query.offset,
+    nextOffset: calculateNextOffset(query, body),
+    entries: body.hits.hits.map(transformSource(source)),
+  };
+};
+
+const transformSearchResultsV1 = ({ query, source, includeMetadata }) => results => {
   const { body } = results;
   return {
     query: query.query,
@@ -281,7 +293,7 @@ module.exports = source => {
       const sourceWithMappings = await addIndicesMappedToSource(source);
       return elasticsearch
         .search(elasticSearchQuery)
-        .then(transformSearchResults({ query, source: sourceWithMappings, includeMetadata: true }))
+        .then(transformSearchResultsV1({ query, source: sourceWithMappings, includeMetadata: true }))
     },
 
     async advanceSearch(query) {
@@ -313,7 +325,7 @@ module.exports = source => {
             query: elasticSearchQuery,
           }
         })
-        .then(transformSearchResults({ query, source: sourceWithMappings, includeMetadata: true }))
+        .then(transformSearchResultsV1({ query, source: sourceWithMappings, includeMetadata: true }))
     },
 
     async getOneById(id) {

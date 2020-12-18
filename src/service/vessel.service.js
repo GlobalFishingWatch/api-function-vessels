@@ -329,14 +329,17 @@ module.exports = source => {
     },
 
     async getOneById(id) {
-
-      const sourceWithMappings = await addIndicesMappedToSource(source);
-
+      if (source.version === 'v1') {
+        const sourceWithMappings = await addIndicesMappedToSource(source);
+        return elasticsearch.get({
+          index,
+          id,
+        }).then(transformSourceV1(sourceWithMappings))
+      }
       return elasticsearch.get({
         index,
         id,
-      }).then(transformSourceV1(sourceWithMappings))
-
+      }).then(transformSource(source))
     },
   };
 };

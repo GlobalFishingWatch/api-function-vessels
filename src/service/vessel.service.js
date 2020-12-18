@@ -184,18 +184,18 @@ const addIndicesMappedToSource = async function (source) {
   return { ...source, indicesMapped };
 }
 
-module.exports = source => {
-  let index;
-  if (source.datasets) {
-    if (source.version === 'v1') {
-      index = source.datasets.map(idx => idx.configuration.index).join(",");
-    } else {
-      index = source.dataset.vesselIndex;
-    }
-  } else {
-    index = source.tileset.toLowerCase();
+const indexFromSource = (source) => {
+  if (source.datasets && source.version === 'v1') {
+      return source.datasets.map(idx => idx.configuration.index).join(",");
+  } else if (source.dataset) {
+      return source.dataset.vesselIndex;
   }
 
+  return source.tileset.toLowerCase();
+}
+
+module.exports = source => {
+  const index = indexFromSource(source);
   log.debug(`Searching in elasticsearch index ${index}`);
 
   return {

@@ -99,7 +99,19 @@ const transformGetVesselSchemaResults = () => results => {
   return mappingToSchema(properties);
 };
 
-const transformSearchResults = ({ query, source, includeMetadata }) => results => {
+const transformSearchResults = ({ query, source }) => results => {
+  const { body } = results;
+  return {
+    query: query.query,
+    total: body.hits.total,
+    limit: query.limit,
+    offset: query.offset,
+    nextOffset: calculateNextOffset(query, body),
+    entries: body.hits.hits.map(transformSource(source)),
+  };
+};
+
+const transformSearchResultsV1 = ({ query, source, includeMetadata }) => results => {
   const { body } = results;
   return {
     query: query.query,
@@ -184,18 +196,18 @@ const addIndicesMappedToSource = async function (source) {
   return { ...source, indicesMapped };
 }
 
-module.exports = source => {
-  let index;
-  if (source.datasets) {
-    if (source.version === 'v1') {
-      index = source.datasets.map(idx => idx.configuration.index).join(",");
-    } else {
-      index = source.dataset.vesselIndex;
-    }
-  } else {
-    index = source.tileset.toLowerCase();
+const indexFromSource = (source) => {
+  if (source.datasets && source.version === 'v1') {
+      return source.datasets.map(idx => idx.configuration.index).join(",");
+  } else if (source.dataset) {
+      return source.dataset.vesselIndex;
   }
 
+  return source.tileset.toLowerCase();
+}
+
+module.exports = source => {
+  const index = indexFromSource(source);
   log.debug(`Searching in elasticsearch index ${index}`);
 
   return {
@@ -281,7 +293,7 @@ module.exports = source => {
       const sourceWithMappings = await addIndicesMappedToSource(source);
       return elasticsearch
         .search(elasticSearchQuery)
-        .then(transformSearchResults({ query, source: sourceWithMappings, includeMetadata: true }))
+        .then(transformSearchResultsV1({ query, source: sourceWithMappings, includeMetadata: true }))
     },
 
     async advanceSearch(query) {
@@ -313,18 +325,21 @@ module.exports = source => {
             query: elasticSearchQuery,
           }
         })
-        .then(transformSearchResults({ query, source: sourceWithMappings, includeMetadata: true }))
+        .then(transformSearchResultsV1({ query, source: sourceWithMappings, includeMetadata: true }))
     },
 
     async getOneById(id) {
-
-      const sourceWithMappings = await addIndicesMappedToSource(source);
-
+      if (source.version === 'v1') {
+        const sourceWithMappings = await addIndicesMappedToSource(source);
+        return elasticsearch.get({
+          index,
+          id,
+        }).then(transformSourceV1(sourceWithMappings))
+      }
       return elasticsearch.get({
         index,
         id,
-      }).then(transformSourceV1(sourceWithMappings))
-
+      }).then(transformSource(source))
     },
   };
 };

@@ -7,7 +7,7 @@ const { log } = require('gfw-api-utils').logger;
 const { parseSqlToElasticSearchQuery } = require('../parser/sql-parser');
 const { mappingToSchema } = require('../parser/mapping-to-schema');
 const {
-  VESSELS_CONSTANTS: { IMO, MMSI, SHIPNAME, FLAG, VESSEL_ID, QUERY_TYPES },
+  VESSELS_CONSTANTS: { DEFAULT_PROPERTY_SUGGEST },
 } = require('../constant');
 const { removeWhitespace } = require('../utils/remove-whitespace');
 const { sanitizeSqlQuery } = require('../utils/sanitize-sql');
@@ -34,10 +34,13 @@ const transformSource = source => result => {
 
 const transformSourceV1 = source => result => {
   const entry = result.body ? result.body : result;
+  const { _index: index } = entry;
+
+  const { id } = source.indicesMapped.find(it => it.index === index);
+
   const baseFields = source.tileset
     ? { tilesetId: source.tileset }
-    : { dataset: source.dataset.id };
-
+    : { dataset: id };
   return {
     id: entry._id,
     ...entry._source,
@@ -53,20 +56,21 @@ const transformSuggestResult = (suggests, query) => {
   return query.toUpperCase() !== suggestion ? suggestion : null;
 };
 
-const getQueryFieldsFiltered = query => {
-  if (query.queryFields.length > 0) {
-    return query.queryFields;
+const getQueryFieldsFiltered = (query, fieldsToSearch) => {
+  if (query.queryFields.length === 0) {
+    return fieldsToSearch;
   }
 
-  if (/^\d{7}$/.test(query.query.trim())) {
-    return [IMO];
-  }
+  query.queryFields.forEach(field => {
+    if (!fieldsToSearch.includes(field)) {
+      throw new UnprocessableEntityException('Invalid Query: ', {
+        message: `${field} is not an allowed field to search`,
+        path: ['queryFields'],
+      });
+    }
+  });
 
-  if (/^\d{9}$/.test(query.query.trim())) {
-    return [MMSI];
-  }
-
-  return [SHIPNAME, FLAG, VESSEL_ID, IMO, MMSI];
+  return query.queryFields;
 };
 
 const calculateNextOffset = (query, results) =>
@@ -100,13 +104,24 @@ const transformGetVesselSchemaResults = () => results => {
   return mappingToSchema(properties);
 };
 
-const transformSearchResults = ({
+const transformSearchResults = ({ query, source }) => results => {
+  const { body } = results;
+  return {
+    query: query.query,
+    total: body.hits.total,
+    limit: query.limit,
+    offset: query.offset,
+    nextOffset: calculateNextOffset(query, body),
+    entries: body.hits.hits.map(transformSource(source)),
+  };
+};
+
+const transformSearchResultsV1 = ({
   query,
   source,
   includeMetadata,
 }) => results => {
   const { body } = results;
-
   return {
     query: query.query,
     total: body.hits.total,
@@ -121,6 +136,7 @@ const transformSearchResults = ({
               body.suggest.searchSuggest,
               query.query,
             ),
+            field: query.suggestField || DEFAULT_PROPERTY_SUGGEST,
           }
         : undefined,
   };
@@ -142,78 +158,102 @@ const transformSuggestionsResults = ({
   );
 };
 
-const getQueryByType = (type, index, query) => {
-  const sanitizedQuery =
-    type !== QUERY_TYPES.IDS ? sanitizeSqlQuery(query.query) : null;
+const getQueryByType = (index, query, fieldsToSearch) => {
+  const sanitizedQuery = sanitizeSqlQuery(query.query);
+  log.info(`Query sanitized: ${sanitizedQuery}`);
 
-  const suggest = {
-    text: sanitizedQuery,
-    searchSuggest: {
-      term: {
-        field: query.suggestField,
-      },
-    },
-  };
+  const fieldsToSearchCleared = fieldsToSearch.filter(
+    field => !['lastTransmissionDate', 'firstTransmissionDate'].includes(field),
+  );
+  const fields = getQueryFieldsFiltered(query, fieldsToSearchCleared);
+  log.info(`Fields to search: ${fields}`);
 
-  const basicQuery = {
+  const suggestField = query.suggestField || DEFAULT_PROPERTY_SUGGEST;
+  log.info(`Result based on suggest field: ${suggestField}`);
+
+  return {
     index,
     from: query.offset || 0,
     size: query.limit || 10,
     body: {
-      query: {},
-      suggest,
+      query: {
+        query_string: {
+          query: sanitizedQuery,
+          fields,
+          default_operator: 'and',
+        },
+      },
+      suggest: {
+        text: sanitizedQuery,
+        searchSuggest: {
+          term: {
+            field: suggestField,
+          },
+        },
+      },
     },
   };
-
-  if (type === QUERY_TYPES.PHRASE) {
-    basicQuery.body.query = {
-      match_phrase: {},
-    };
-    basicQuery.body.query.match_phrase[SHIPNAME] = sanitizedQuery;
-  }
-
-  if (type === QUERY_TYPES.TOKENS) {
-    basicQuery.body.query = {
-      query_string: {
-        query: sanitizedQuery,
-        fields: getQueryFieldsFiltered(query),
-      },
-    };
-  }
-
-  return basicQuery;
 };
 
-function getQueryType(query) {
-  return /^".*"$/.test(query.query) ? QUERY_TYPES.PHRASE : QUERY_TYPES.TOKENS;
-}
+const addIndicesMappedToSource = async function(source) {
+  const { body: aliases } = await elasticsearch.cat.aliases({
+    format: 'json',
+  });
 
-module.exports = source => {
-  let index;
-  if (source.dataset) {
-    if (source.version === 'v1') {
-      index = source.dataset.configuration.index;
-    } else {
-      index = source.dataset.vesselIndex;
-    }
-  } else {
-    index = source.tileset.toLowerCase();
+  const indicesMapped = await Promise.all(
+    source.datasets.map(async dataset => {
+      const { index: iterationIndex } = dataset.configuration;
+      const currentAlias = aliases.find(
+        alias => alias.alias === iterationIndex,
+      );
+      return {
+        id: dataset.id,
+        alias: currentAlias ? currentAlias.alias : null,
+        index: currentAlias ? currentAlias.index : iterationIndex,
+      };
+    }),
+  );
+
+  return { ...source, indicesMapped };
+};
+
+const indexFromSource = source => {
+  if (source.datasets && source.version === 'v1') {
+    return source.datasets.map(idx => idx.configuration.index).join(',');
+  } else if (source.dataset) {
+    return source.dataset.vesselIndex;
   }
 
+  return source.tileset.toLowerCase();
+};
+
+module.exports = source => {
+  const index = indexFromSource(source);
   log.debug(`Searching in elasticsearch index ${index}`);
 
   return {
     async getAllVessels(query) {
+      const sourceWithMappings = await addIndicesMappedToSource(source);
+
       const multiQueries = query.ids.map(id => {
         return {
-          _index: index,
+          _index: index.split(','),
           _id: id,
         };
       });
       const elasticSearchQuery = { body: { docs: multiQueries } };
+
       return elasticsearch
         .mget(elasticSearchQuery)
-        .then(transformGetAllVesselsResults({ query, source }));
+        .then(response => {
+          response.body.docs = response.body.docs.filter(
+            doc => doc.found === true,
+          );
+          return response;
+        })
+        .then(
+          transformGetAllVesselsResults({ query, source: sourceWithMappings }),
+        );
     },
 
     async getVesselsSchema() {
@@ -272,30 +312,32 @@ module.exports = source => {
     },
 
     async searchWithSuggest(query) {
-      const queryType = getQueryType(query.query);
-      log.info(`The query type is ${queryType}`);
-      const elasticSearchQuery = getQueryByType(queryType, index, query);
-      log.info(`The query is ${JSON.stringify(elasticSearchQuery)}`);
-      return elasticsearch.search(elasticSearchQuery).then(
-        transformSearchResults({
-          query,
-          source,
-          includeMetadata: queryType !== QUERY_TYPES.IDS,
-        }),
+      const elasticSearchQuery = getQueryByType(
+        index,
+        query,
+        source.fieldsToSearch,
       );
+      log.info(`The query is ${JSON.stringify(elasticSearchQuery)}`);
+
+      const sourceWithMappings = await addIndicesMappedToSource(source);
+      return elasticsearch
+        .search(elasticSearchQuery)
+        .then(
+          transformSearchResultsV1({
+            query,
+            source: sourceWithMappings,
+            includeMetadata: true,
+          }),
+        );
     },
 
     async advanceSearch(query) {
-      const {
-        dataset: {
-          configuration: { index: table },
-        },
-      } = source;
       const sqlQuery = parseSqlToElasticSearchQuery(
-        table,
+        index,
         removeWhitespace(query.query),
       );
       log.info(`SQL Query > ${sqlQuery}`);
+
       const {
         body: { query: elasticSearchQuery },
       } = await elasticsearch.sql
@@ -320,24 +362,43 @@ module.exports = source => {
             path: ['query'],
           });
         });
+
+      const sourceWithMappings = await addIndicesMappedToSource(source);
+
       return elasticsearch
         .search({
+          index,
+          from: query.offset,
+          size: query.limit,
           body: {
-            from: query.offset,
-            size: query.limit,
             query: elasticSearchQuery,
           },
         })
-        .then(transformSearchResults({ query, source, includeMetadata: true }));
+        .then(
+          transformSearchResultsV1({
+            query,
+            source: sourceWithMappings,
+            includeMetadata: true,
+          }),
+        );
     },
 
     async getOneById(id) {
+      if (source.version === 'v1') {
+        const sourceWithMappings = await addIndicesMappedToSource(source);
+        return elasticsearch
+          .get({
+            index,
+            id,
+          })
+          .then(transformSourceV1(sourceWithMappings));
+      }
       return elasticsearch
         .get({
           index,
           id,
         })
-        .then(transformSourceV1(source));
+        .then(transformSource(source));
     },
   };
 };

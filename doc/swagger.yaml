@@ -31,6 +31,7 @@ components:
             properties:
               field:
                 type: string
+                example: 'queryFields'
               errors:
                 type: array
                 items:
@@ -41,10 +42,13 @@ components:
                   properties:
                     code:
                       type: string
+                      example: 422
                     description:
                       type: string
+                      example: flag is not an allowed field
         general:
           type: array
+          example: []
           items:
             type: object
             required:
@@ -151,6 +155,148 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Feature'
+
+    Vessel:
+      type: object
+      description: Get one vessel by id
+      properties:
+        id:
+          type: string
+          example: '4a5b53bd9-92d9-d569-7a06-3a156e16509a'
+        firstTransmissionDate:
+          type: string
+          example: '2017-01-22T20:05:05Z'
+        lastTransmissionDate:
+          type: string
+          example: '2017-01-22T20:05:05Z'
+        shipname:
+          type: string
+          example: 'DON TITO'
+        flag:
+          type: string
+          example: 'CHL'
+        dataset:
+          type: string
+          example: 'global-vessels:v20190502'
+        source:
+          type: string
+          example: 'AIS'
+
+    ListOfVessels:
+      type: object
+      description: Get a list of  vessels
+      properties:
+        total:
+          type: number
+          example: 543
+        limit:
+          type: number
+          example: 10
+        offset:
+          type: number
+          example: 10
+        nextOffset:
+          type: number
+          example: 20
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/Vessel'
+
+    VesselSchema:
+      type: object
+      description: Get a vessel schema from one dataset
+      properties:
+        id:
+          type: string
+          example: 'text'
+        firstTransmissionDate:
+          type: string
+          example: 'text'
+        lastTransmissionDate:
+          type: string
+          example: 'text'
+        shipname:
+          type: string
+          example: 'text'
+        flag:
+          type: string
+          example: 'text'
+        dataset:
+          type: string
+          example: 'text'
+        source:
+          type: string
+          example: 'text'
+
+    SearchVessels:
+      type: object
+      description: Search vessels
+      properties:
+        query:
+          type: string
+          example: 'DON TIT'
+        total:
+          type: object
+          properties:
+            value:
+              type: number
+              example: 7
+            relation:
+              type: string
+              example: 'eq'
+        limit:
+          type: number
+          example: 10
+        offset:
+          type: number
+          example: 10
+        nextOffset:
+          type: number
+          example: 20
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/Vessel'
+        metadata:
+          type: object
+          properties:
+            suggestion:
+              type: string
+              example: 'DON TITO'
+            field:
+              type: string
+              example: 'shipname'
+
+    AdvancedSearchVessels:
+      type: object
+      description: Search vessels using advanced syntax (SQL)
+      properties:
+        query:
+          type: string
+          example: shipname like 'DON TIT%' and flag = 'CHL'
+        total:
+          type: object
+          properties:
+            value:
+              type: number
+              example: 7
+            relation:
+              type: string
+              example: 'eq'
+        limit:
+          type: number
+          example: 10
+        offset:
+          type: number
+          example: 10
+        nextOffset:
+          type: number
+          example: 20
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/Vessel'
 
 paths:
   '/tilesets/{tileset}/vessels':
@@ -515,6 +661,10 @@ paths:
         '200':
           description: |
             Expected response to a successful request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListOfVessels'
         '401':
           description: Unauthorized, either the api key is invalid or expired.
         '400':
@@ -543,7 +693,11 @@ paths:
       responses:
         '200':
           description: |
-            Expected response to a successful request.
+            Expected response to a successful request. (Depends on the dataset requested)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VesselSchema'
         '401':
           description: Unauthorized, either the api key is invalid or expired.
         '400':
@@ -621,6 +775,10 @@ paths:
         '200':
           description: |
             Expected response to a successful request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchVessels'
         '401':
           description: Unauthorized, either the api key is invalid or expired.
         '400':
@@ -653,7 +811,7 @@ paths:
           required: false
           schema:
             type: string
-          example: shipname LIKE 'GUAP%' and mmsi = '265555280'
+          example: shipname LIKE 'DON TIT%' and mmsi = '265555280'
         - name: limit
           in: query
           description: |
@@ -683,6 +841,10 @@ paths:
         '200':
           description: |
             Expected response to a successful request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdvancedSearchVessels'
         '401':
           description: Unauthorized, either the api key is invalid or expired.
         '400':
@@ -727,6 +889,10 @@ paths:
         '200':
           description: |
             Expected response to a successful request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vessel'
         '401':
           description: Unauthorized, either the api key is invalid or expired.
         '400':

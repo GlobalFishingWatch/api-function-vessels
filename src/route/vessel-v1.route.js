@@ -153,7 +153,7 @@ router.get(
 router.get(
   '/vessels/search',
   koa.checkPermissionsWithRequestParams([
-    { action: 'read', type: 'dataset', valueQueryParam: 'datasets' },
+    { action: 'search', type: 'dataset', valueQueryParam: 'datasets' },
   ]),
   redis([]),
   searchVesselsV1Validation,
@@ -166,7 +166,7 @@ router.get(
 router.get(
   '/vessels/advanced-search',
   koa.checkPermissionsWithRequestParams([
-    { action: 'read', type: 'dataset', valueQueryParam: 'datasets' },
+    { action: 'search', type: 'dataset', valueQueryParam: 'datasets' },
   ]),
   redis([]),
   advancedSearchVesselsV1Validation,

@@ -5,7 +5,7 @@ const {
 module.exports = {
   async get(ctx, id, version) {
     const response = await request(ctx, {
-      uri: `${version === 'v1' ? '/v1' : ''}/datasets/${id}`,
+      uri: `${version === 'v1' ? '/v1' : ''}/datasets/${id}?cache=false`,
       json: true,
     });
 
@@ -14,7 +14,9 @@ module.exports = {
 
   async getMultiple(ctx, ids, version) {
     const response = await request(ctx, {
-      uri: `${version === 'v1' ? '/v1' : ''}/datasets?ids=${ids.join(',')}`,
+      uri: `${
+        version === 'v1' ? '/v1' : ''
+      }/datasets?cache=false&ids=${ids.join(',')}`,
       json: true,
     });
     return response;

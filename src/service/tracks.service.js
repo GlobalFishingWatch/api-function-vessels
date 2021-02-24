@@ -184,7 +184,7 @@ module.exports = ({
       const additionalSelectFields = features.map(
         feature => feature.databaseField,
       );
-      const db = dataset.id === 'fishing-tracks:v20190502' ? sqlFishingTracks : sqlFishing;
+      const db = dataset.id === 'fishing-tracks:v20190502' || dataset.id === 'public-fishing-tracks:v20190502' ? sqlFishingTracks : sqlFishing;
       const baseQuery = db
         .select(
           'seg_id',

@@ -185,7 +185,6 @@ module.exports = ({
         feature => feature.databaseField,
       );
       const db =
-        dataset.id === 'fishing-tracks:v20190502' ||
         dataset.id === 'public-fishing-tracks:v20190502'
           ? sqlFishingTracks
           : sqlFishing;

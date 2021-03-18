@@ -40,7 +40,7 @@ class TilesetRouter {
       log.debug(`Looking up vessel information for vessel ${vesselId}`);
       const result = await vesselService({
         tileset: ctx.params.tileset,
-      }).get(vesselId);
+      }).getOneById(vesselId);
 
       log.debug('Returning vessel information');
       ctx.state.cacheTags = [

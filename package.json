@@ -34,7 +34,7 @@
     "lodash": "^4.17.19",
     "pbf": "^3.2.1",
     "pg": "^7.18.2",
-    "protobufjs": "^6.10.1",
+    "protobufjs": "^6.11.3",
     "request": "^2.88.2",
     "request-promise": "^4.2.6",
     "shrink-ray-current": "^4.1.2",

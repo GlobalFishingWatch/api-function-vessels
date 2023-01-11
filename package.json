@@ -24,7 +24,7 @@
     "gfw-api-utils": "https://github.com/GlobalFishingWatch/gfw-api-utils.git#develop",
     "helmet": "^3.23.3",
     "ioredis": "^4.17.3",
-    "knex": "^0.19.5",
+    "knex": "^2.4.0",
     "koa": "^2.13.0",
     "koa-basic-auth": "^4.0.0",
     "koa-body": "^4.2.0",

@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "watch": "npm-watch start",
-    "start": "node  --max-http-header-size 20000 src/index.js"
+    "start": "node  --max-http-header-size 80000 src/index.js"
   },
   "watch": {
     "start": "*.js"
@@ -19,9 +19,9 @@
     "@hapi/joi": "16.1.8",
     "@koa/cors": "^3.1.0",
     "@turf/turf": "^5.1.6",
-    "auth-middleware": "git://github.com/GlobalFishingWatch/auth-middleware.git#develop",
+    "auth-middleware": "https://github.com/GlobalFishingWatch/auth-middleware.git#develop",
     "geobuf": "^3.0.2",
-    "gfw-api-utils": "git://github.com/GlobalFishingWatch/gfw-api-utils.git#develop",
+    "gfw-api-utils": "https://github.com/GlobalFishingWatch/gfw-api-utils.git#develop",
     "helmet": "^3.23.3",
     "ioredis": "^4.17.3",
     "knex": "^0.19.5",

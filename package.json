@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "watch": "npm-watch start",
-    "start": "node  --max-http-header-size 20000 src/index.js"
+    "start": "node  --max-http-header-size 80000 src/index.js"
   },
   "watch": {
     "start": "*.js"
